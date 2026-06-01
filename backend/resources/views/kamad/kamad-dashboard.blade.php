@@ -52,7 +52,7 @@
                 class="sidebar-item flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl">
                 <i class="fas fa-file-contract mr-4 text-sm"></i> <span class="font-medium">Laporan Masuk</span>
             </a>
-            <a href="#"
+            <a href="{{ route('kamad.kamad-poin') }}"
                 class="sidebar-item flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl">
                 <i class="fas fa-users mr-4 text-sm"></i> <span class="font-medium">Poin Keseluruhan</span>
             </a>

@@ -69,6 +69,8 @@ Route::middleware('web')->group(function () {
     // 👇 NAMA ROUTE DISERAGAMKAN MENJADI 'kamad.laporan'
     Route::get('/kamad/laporan-masuk', [KamadController::class, 'laporanMasuk'])->name('kamad.kamad-laporan');
 
+    Route::get('/kamad/poin', [KamadController::class, 'poinKeseluruhan'])->name('kamad.kamad-poin');
+
     // 👇 ROUTE PROFIL DITAMBAHKAN KEMBALI
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');

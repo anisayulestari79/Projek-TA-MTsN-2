@@ -50,12 +50,12 @@
             </a>
 
             <!-- Menu Laporan Masuk Aktif di halaman ini -->
-            <a href="#" onclick="showView('laporan')" id="nav-laporan"
+            <a href="{{ route('kamad.kamad-laporan') }}" onclick="showView('laporan')" id="nav-laporan"
                 class="sidebar-item active flex items-center px-6 py-4 transition">
                 <i class="fas fa-file-contract mr-4 text-sm"></i> <span>Laporan Masuk</span>
             </a>
 
-            <a href="#"
+            <a href="{{ route('kamad.kamad-poin') }}"
                 class="sidebar-item flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl">
                 <i class="fas fa-users mr-4 text-sm"></i> <span class="font-medium">Poin Keseluruhan</span>
             </a>
