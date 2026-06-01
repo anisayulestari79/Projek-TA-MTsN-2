@@ -71,17 +71,33 @@
                     Monitoring Kedisiplinan
                 </h2>
             </div>
+
             <!-- User Profile & Dropdown -->
             <div class="relative">
                 <button id="profileDropdownBtn"
                     class="flex items-center gap-4 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition focus:outline-none">
                     <div class="text-right">
                         <p class="text-xs font-black text-[#10b981] uppercase leading-none">
-                            {{ $user['name'] ?? 'Kepala Madrasah' }}</p>
+                            {{ Auth::user()->name ?? 'Kepala Madrasah' }}</p>
                         <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Akses: Pimpinan</p>
                     </div>
-                    <img src="{{ $user['photo'] ?? 'https://ui-avatars.com/api/?name=' . urlencode($user['name'] ?? 'Kepala Madrasah') . '&background=10b981&color=fff' }}"
-                        class="w-10 h-10 rounded-full border-2 border-green-50 shadow-sm" alt="Profile">
+
+                    <!-- Foto Profil Terhubung dengan Auth & Fallback OnError -->
+                    @php
+                        $avatarUrl =
+                            'https://ui-avatars.com/api/?name=' .
+                            urlencode(Auth::user()->name ?? 'Kepala Madrasah') .
+                            '&background=10b981&color=fff';
+                        $photoPath = Auth::user()->photo
+                            ? (str_starts_with(Auth::user()->photo, 'http')
+                                ? Auth::user()->photo
+                                : asset('storage/' . Auth::user()->photo))
+                            : $avatarUrl;
+                    @endphp
+
+                    <img src="{{ $photoPath }}" onerror="this.src='{{ $avatarUrl }}'"
+                        class="w-10 h-10 rounded-full border-2 border-green-50 object-cover shadow-sm" alt="Profile">
+
                     <i class="fas fa-chevron-down text-gray-400 text-xs ml-1"></i>
                 </button>
 
@@ -109,9 +125,9 @@
 
         <!-- SECTION: DASHBOARD HOME -->
         <div id="view-dashboard" class="view-section active">
-            <!-- Grid Layout (Menyamai struktur Admin) -->
+            <!-- Grid Layout -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-                <!-- CHART SECTION (Kiri, 2 Kolom) -->
+                <!-- CHART SECTION -->
                 <div class="lg:col-span-2 bg-white p-8 rounded-[30px] shadow-sm border border-gray-50">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="font-black text-gray-700 text-sm uppercase tracking-widest flex items-center">
@@ -124,7 +140,7 @@
                     <canvas id="bigChart" height="110"></canvas>
                 </div>
 
-                <!-- STATISTIK SECTION (Kanan, 1 Kolom) -->
+                <!-- STATISTIK SECTION -->
                 <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50">
                     <h3 class="font-black text-gray-700 text-sm uppercase tracking-widest mb-6">Ringkasan Sistem</h3>
                     <div class="space-y-4">
@@ -154,29 +170,39 @@
                     <h3 class="font-black text-gray-700 text-sm uppercase tracking-widest">
                         <i class="fas fa-bell text-orange-400 mr-2"></i> Laporan Terbaru dari Admin & BK
                     </h3>
+                    <a href="{{ route('kamad.kamad-laporan') }}"
+                        class="text-[10px] font-bold text-[#10b981] hover:underline uppercase">Lihat Semua</a>
                 </div>
 
                 <div class="space-y-4 text-xs">
-                    <!-- Item Laporan -->
-                    <div
-                        class="p-5 bg-gray-50 hover:bg-gray-100 rounded-2xl flex justify-between items-center transition border border-gray-100 cursor-pointer">
-                        <div class="flex items-center gap-4">
-                            <div
-                                class="w-12 h-12 rounded-xl bg-red-100 text-red-500 flex items-center justify-center text-xl">
-                                <i class="fas fa-file-pdf"></i>
+                    <!-- Looping Laporan Terbaru dari Database -->
+                    @forelse($laporanTerbaru ?? [] as $laporan)
+                        <div
+                            class="p-5 bg-gray-50 hover:bg-gray-100 rounded-2xl flex justify-between items-center transition border border-gray-100 cursor-pointer">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-red-100 text-red-500 flex items-center justify-center text-xl">
+                                    <i class="fas fa-file-pdf"></i>
+                                </div>
+                                <div>
+                                    <p class="font-black text-gray-800 uppercase tracking-tight text-sm">
+                                        {{ $laporan->judul ?? 'Laporan Tanpa Judul' }}</p>
+                                    <p class="text-gray-400 mt-1 font-medium italic"><i
+                                            class="fas fa-user-shield mr-1"></i>
+                                        Dikirim oleh: {{ $laporan->pengirim->name ?? 'Administrator Sistem' }}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-black text-gray-800 uppercase tracking-tight text-sm">Rekapitulasi
-                                    Pelanggaran - Bulan Ini</p>
-                                <p class="text-gray-400 mt-1 font-medium italic"><i class="fas fa-user-shield mr-1"></i>
-                                    Dikirim oleh: Administrator Sistem</p>
-                            </div>
+                            <a href="{{ asset('storage/' . $laporan->file_path) }}" download
+                                class="bg-[#10b981] text-white px-6 py-2.5 rounded-xl font-bold uppercase tracking-tighter text-[10px] hover:scale-105 shadow-sm shadow-green-100 transition">
+                                <i class="fas fa-download mr-1"></i> Unduh
+                            </a>
                         </div>
-                        <button
-                            class="bg-[#10b981] text-white px-6 py-2.5 rounded-xl font-bold uppercase tracking-tighter text-[10px] hover:scale-105 shadow-sm shadow-green-100 transition">
-                            <i class="fas fa-download mr-1"></i> Unduh
-                        </button>
-                    </div>
+                    @empty
+                        <div
+                            class="text-center p-6 text-gray-400 font-medium text-sm border-2 border-dashed border-gray-100 rounded-2xl">
+                            Belum ada laporan terbaru yang masuk.
+                        </div>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -185,22 +211,17 @@
         <div id="view-profile" class="view-section">
             <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50 max-w-2xl mx-auto">
                 <!-- Profile Display -->
-                <div id="profileView" class="flex flex-col items-center">
+                <div id="profileView" class="flex flex-col items-center transition-all duration-300">
                     <!-- Image -->
                     <div
                         class="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-green-50 shadow-sm relative group">
-                        @if (isset($user['photo']) && $user['photo'])
-                            <img src="{{ $user['photo'] }}" class="w-full h-full object-cover" id="mainProfilePic"
-                                alt="Profile Picture">
-                        @else
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($user['name'] ?? 'Kepala Madrasah') }}&background=10b981&color=fff&size=128"
-                                class="w-full h-full object-cover" id="mainProfilePic" alt="Profile Picture">
-                        @endif
+                        <img src="{{ $photoPath }}" onerror="this.src='{{ $avatarUrl }}'"
+                            class="w-full h-full object-cover" id="mainProfilePic" alt="Profile Picture">
                     </div>
-                    <h3 class="text-2xl font-black text-gray-800 uppercase">{{ $user['name'] ?? 'Nama Pimpinan' }}
-                    </h3>
+                    <h3 class="text-2xl font-black text-gray-800 uppercase">
+                        {{ Auth::user()->name ?? 'Nama Pimpinan' }}</h3>
                     <p class="text-xs font-bold text-[#10b981] uppercase tracking-widest mb-8">
-                        {{ ucfirst($user['role'] ?? 'Kepala Madrasah') }}</p>
+                        {{ ucfirst(Auth::user()->role ?? 'Kepala Madrasah') }}</p>
 
                     <div class="w-full space-y-4">
                         <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
@@ -209,14 +230,15 @@
                                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">NIP / Username
                                 </p>
                                 <p class="text-sm font-black text-gray-700">
-                                    {{ $user['nip'] ?? ($user['username'] ?? '-') }}</p>
+                                    {{ Auth::user()->nip ?? (Auth::user()->username ?? '-') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
                             <i class="fas fa-venus-mars text-[#10b981] w-10 text-center text-xl"></i>
                             <div class="ml-4">
                                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gender</p>
-                                <p class="text-sm font-black text-gray-700">{{ $user['gender'] ?? '-' }}</p>
+                                <p class="text-sm font-black text-gray-700">
+                                    {{ Auth::user()->gender ?? (Auth::user()->jk ?? '-') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
@@ -224,7 +246,7 @@
                             <div class="ml-4">
                                 <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No. Telepon
                                 </p>
-                                <p class="text-sm font-black text-gray-700">{{ $user['phone'] ?? '-' }}</p>
+                                <p class="text-sm font-black text-gray-700">{{ Auth::user()->phone ?? '-' }}</p>
                             </div>
                         </div>
                     </div>
@@ -236,8 +258,8 @@
                 </div>
 
                 <!-- Profile Form -->
-                <form id="profileForm" class="hidden flex flex-col" action="{{ route('profile.update') }}"
-                    method="POST" enctype="multipart/form-data">
+                <form id="profileForm" class="hidden flex-col transition-all duration-300"
+                    action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
                         <h3 class="text-lg font-black text-gray-700 uppercase tracking-widest">Edit Profil</h3>
@@ -258,13 +280,14 @@
                             <label
                                 class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Nama
                                 Lengkap</label>
-                            <input type="text" name="name" value="{{ $user['name'] ?? '' }}" required
+                            <input type="text" name="name" value="{{ Auth::user()->name ?? '' }}" required
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">NIP
                                 / Username</label>
-                            <input type="text" value="{{ $user['nip'] ?? ($user['username'] ?? '') }}" disabled
+                            <input type="text" value="{{ Auth::user()->nip ?? (Auth::user()->username ?? '') }}"
+                                disabled
                                 class="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-400 cursor-not-allowed">
                         </div>
                         <div>
@@ -274,15 +297,26 @@
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                                 <option value="">Pilih Gender</option>
                                 <option value="Laki-laki"
-                                    {{ ($user['gender'] ?? '') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+                                    {{ (Auth::user()->gender ?? (Auth::user()->jk ?? '')) === 'Laki-laki' ? 'selected' : '' }}>
+                                    Laki-laki</option>
                                 <option value="Perempuan"
-                                    {{ ($user['gender'] ?? '') === 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                                    {{ (Auth::user()->gender ?? (Auth::user()->jk ?? '')) === 'Perempuan' ? 'selected' : '' }}>
+                                    Perempuan</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">No.
                                 Telepon</label>
-                            <input type="tel" name="phone" value="{{ $user['phone'] ?? '' }}"
+                            <input type="tel" name="phone" value="{{ Auth::user()->phone ?? '' }}"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                        </div>
+
+                        <!-- Input Ganti Password (Opsional) -->
+                        <div class="pt-4 mt-2 border-t border-gray-100">
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Ganti
+                                Password (Opsional)</label>
+                            <input type="password" name="password" placeholder="Kosongkan jika tidak ingin mengubah"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                         </div>
                     </div>
@@ -329,10 +363,14 @@
 
             if (showForm) {
                 view.classList.add('hidden');
+                view.classList.remove('flex');
                 form.classList.remove('hidden');
+                form.classList.add('flex');
             } else {
                 view.classList.remove('hidden');
+                view.classList.add('flex');
                 form.classList.add('hidden');
+                form.classList.remove('flex');
             }
         }
 

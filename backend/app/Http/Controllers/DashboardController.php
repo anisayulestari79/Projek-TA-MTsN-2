@@ -178,6 +178,10 @@ class DashboardController extends Controller
             $chartData[] = $count;
         }
 
+        // 3. Tambahan Data Laporan Terbaru
+        // Mengambil 3 data terakhir dari tabel arsip_laporans
+        $laporanTerbaru = \App\Models\ArsipLaporan::with('user')->latest()->take(3)->get();
+
         // Tampilkan ke view kamad/kamad-dashboard.blade.php
         return view('kamad.kamad-dashboard', compact(
             'user',
@@ -185,7 +189,8 @@ class DashboardController extends Controller
             'waspada',
             'dropOut',
             'chartLabels',
-            'chartData'
+            'chartData',
+            'laporanTerbaru'
         ));
     }
 }
