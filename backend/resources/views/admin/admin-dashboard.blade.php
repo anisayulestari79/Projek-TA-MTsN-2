@@ -44,8 +44,7 @@
         </div>
 
         <nav class="mt-4 flex-grow pl-6">
-            <a href="#" onclick="showView('dashboard')" id="nav-dashboard"
-                class="sidebar-item active flex items-center px-6 py-4 transition">
+            <a href="{{ route('admin.dashboard') }}" class="sidebar-item active flex items-center px-6 py-4 transition">
                 <i class="fas fa-th-large mr-4 text-sm"></i> <span>Dashboard</span>
             </a>
             <a href="{{ route('admin.guru.index') }}"
@@ -121,6 +120,14 @@
 
         <!-- SECTION: DASHBOARD HOME -->
         <div id="view-dashboard" class="view-section active">
+            <!-- Menampilkan Notifikasi Sukses/Error -->
+            @if (session('success'))
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-2xl mb-6 relative">
+                    <span class="block sm:inline font-bold"><i
+                            class="fas fa-check-circle mr-2"></i>{{ session('success') }}</span>
+                </div>
+            @endif
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
                 <div class="lg:col-span-2 bg-white p-8 rounded-[30px] shadow-sm border border-gray-50">
                     <div class="flex justify-between items-center mb-6">
@@ -165,9 +172,11 @@
                         <input type="text" placeholder="Cari nama siswa..."
                             class="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-green-100 transition">
                     </div>
-                    <button
+
+                    <!-- Tombol Memicu Modal Kirim Laporan ke Kamad -->
+                    <button type="button" onclick="toggleModalLaporan(true)"
                         class="bg-[#10b981] text-white px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition">
-                        <i class="fas fa-file-pdf mr-2"></i> Cetak Laporan
+                        <i class="fas fa-paper-plane mr-2"></i> Kirim Laporan ke Kamad
                     </button>
                 </div>
 
@@ -280,17 +289,6 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-
-        <!-- SECTION: KONSULTASI LIST -->
-        <div id="view-konsultasi-list" class="view-section">
-            <h1 class="text-xl font-bold">Monitoring Konsultasi</h1>
-            <!-- Konten Konsultasi -->
-        </div>
-
-        <!-- SECTION: KONSULTASI FORM -->
-        <div id="view-konsultasi-form" class="view-section">
-            <h1 class="text-xl font-bold">Detail Konsultasi</h1>
         </div>
 
         <!-- SECTION: PROFILE PENGGUNA -->
@@ -411,6 +409,64 @@
         </div>
     </main>
 
+    <!-- ============================================== -->
+    <!-- MODAL KIRIM LAPORAN KE KAMAD                   -->
+    <!-- ============================================== -->
+    <div id="modalKirimLaporan"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-[30px] w-full max-w-lg shadow-2xl transform transition-all scale-95 opacity-0"
+            id="modalKirimContent">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="font-black text-gray-800 text-xl uppercase tracking-widest">Kirim Laporan</h3>
+                        <p class="text-xs text-gray-500 font-medium mt-1">Laporan PDF akan langsung masuk ke Dasbor
+                            Kamad</p>
+                    </div>
+                    <button onclick="toggleModalLaporan(false)"
+                        class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-red-100 hover:text-red-500 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form action="{{ route('admin.laporan.kirim') }}" method="POST" enctype="multipart/form-data"
+                    class="space-y-5">
+                    @csrf
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Judul
+                            Laporan</label>
+                        <input type="text" name="judul" required
+                            placeholder="Contoh: Rekapitulasi Pelanggaran Bulan Juni"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Kategori
+                            Laporan</label>
+                        <select name="kategori" required
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                            <option value="bulanan">Rekap Bulanan</option>
+                            <option value="kelas">Rekap Per Kelas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Upload
+                            File (PDF)</label>
+                        <input type="file" name="file_laporan" accept=".pdf" required
+                            class="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50">
+                        <p class="text-[10px] text-gray-400 mt-2 font-medium"><i class="fas fa-info-circle mr-1"></i>
+                            File PDF maksimal 5MB.</p>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full mt-4 bg-[#10b981] text-white px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-green-100 hover:scale-105 transition flex items-center justify-center gap-2">
+                        Kirim Laporan Sekarang <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Logika Pindah View
         function showView(viewId) {
@@ -436,6 +492,27 @@
                 titleEl.innerText = "Monitoring Konsultasi BK";
                 breadcrumbEl.innerText = "Konsultasi";
                 document.getElementById('nav-konsultasi')?.classList.add('active');
+            }
+        }
+
+        // Logika Modal Laporan
+        function toggleModalLaporan(show) {
+            const modal = document.getElementById('modalKirimLaporan');
+            const content = document.getElementById('modalKirimContent');
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            } else {
+                content.classList.remove('scale-100', 'opacity-100');
+                content.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modal.classList.remove('flex');
+                    modal.classList.add('hidden');
+                }, 200);
             }
         }
 
@@ -527,6 +604,52 @@
         // DIBUNGKUS DOMContentLoaded AGAR AMAN
         // ==========================================
         document.addEventListener('DOMContentLoaded', function() {
+            // LOGIKA CHART.JS (Grafik Tren Bulanan)
+            const ctxBesar = document.getElementById('mainChart');
+            if (ctxBesar) {
+                const chartLabels = {!! json_encode(
+                    $chartLabels ?? ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
+                ) !!};
+                const chartData = {!! json_encode($chartData ?? [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) !!};
+
+                new Chart(ctxBesar.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Jumlah Pelanggaran',
+                            data: chartData,
+                            backgroundColor: '#10b981',
+                            borderRadius: 6,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f3f4f6'
+                                },
+                                ticks: {
+                                    precision: 0
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             // LOGIKA DROPDOWN PROFIL
             const profileBtn = document.getElementById('profileDropdownBtn');
             const profileMenu = document.getElementById('profileDropdownMenu');
@@ -562,18 +685,15 @@
                 });
             }
 
-            // ==========================================
             // LOGIKA SUBMIT FORM PROFIL VIA AJAX
-            // ==========================================
             const profileForm = document.getElementById('profileForm');
             if (profileForm) {
                 profileForm.addEventListener('submit', async function(e) {
-                    e.preventDefault(); // Mencegah form memuat ulang ke halaman JSON
+                    e.preventDefault();
 
                     const submitBtn = this.querySelector('button[type="submit"]');
                     const originalText = submitBtn.innerText;
 
-                    // Ubah teks tombol jadi proses loading
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
                     submitBtn.disabled = true;
 
@@ -584,7 +704,7 @@
                             method: 'POST',
                             body: formData,
                             headers: {
-                                'X-Requested-With': 'XMLHttpRequest' // Penting agar Laravel tahu ini request AJAX
+                                'X-Requested-With': 'XMLHttpRequest'
                             }
                         });
 
@@ -592,7 +712,6 @@
 
                         if (response.ok && result.success) {
                             alert(result.message || 'Profil berhasil diperbarui!');
-                            // Refresh halaman agar foto dan nama terbaru di navbar/session ikut berubah
                             window.location.reload();
                         } else {
                             alert(result.message || 'Terjadi kesalahan saat menyimpan profil.');
