@@ -9,26 +9,24 @@ class Siswa extends Model
 {
     use HasFactory;
 
+    // Menegaskan nama tabel sesuai dengan yang ada di database Anda
     protected $table = 'siswa';
-    
+
+    // Kolom-kolom yang dapat diisi secara massal (mass assignment)
     protected $fillable = [
         'nisn',
         'nama',
-        'jk',
         'kelas',
-        'kontak_ortu',
         'poin',
-        'catatan',
-        'photo',
+        'ortu_id', // Kolom asing (Foreign Key) wajib didaftarkan di sini agar bisa diisi saat register
     ];
 
-    protected $casts = [
-        'poin' => 'integer',
-    ];
-
-    public function riwayatPoin()
+    /**
+     * Relasi balik ke model User (Orang Tua)
+     * Menghubungkan setiap siswa dengan satu akun Wali Murid di tabel users
+     */
+    public function orangTua()
     {
-        return $this->hasMany(RiwayatPoin::class, 'nisn', 'nisn');
+        return $this->belongsTo(User::class, 'ortu_id');
     }
 }
-

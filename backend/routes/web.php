@@ -11,6 +11,8 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\Api\GuruController;
 use App\Http\Controllers\Api\SiswaController;
 use App\Http\Controllers\Api\PoinController;
+use App\Http\Controllers\OrtuController;
+use App\Http\Controllers\OrtuAuthController; 
 
 // =======================================================
 // 1. PUBLIC ROUTES (Halaman Utama)
@@ -122,4 +124,23 @@ Route::middleware('web')->group(function () {
         // --- AUDIT LOG ---
         Route::get('/audit-log', [DashboardController::class, 'auditLog'])->name('audit.index');
     });
+
+    Route::middleware(['auth', 'role:ortu'])->group(function () {
+       Route::get('/dashboard-ortu', [OrtuController::class, 'index'])->name('ortu.dashboard');
+   });
+
+   // Grup rute untuk tamu (belum login)
+   Route::middleware('guest')->group(function () {
+       Route::get('/login-ortu', [OrtuAuthController::class, 'showLogin'])->name('ortu.login');
+       Route::post('/login-ortu', [OrtuAuthController::class, 'login'])->name('ortu.login.submit');
+       
+       Route::get('/register-ortu', [OrtuAuthController::class, 'showRegister'])->name('ortu.register');
+       Route::post('/register-ortu', [OrtuAuthController::class, 'register'])->name('ortu.register.submit');
+   });
+
+   // Grup rute yang harus masuk (sudah login)
+   Route::middleware(['auth'])->group(function () {
+       Route::get('/dashboard-ortu', [OrtuController::class, 'index'])->name('ortu.dashboard');
+       Route::post('/logout-ortu', [OrtuAuthController::class, 'logout'])->name('ortu.logout');
+   });
 });

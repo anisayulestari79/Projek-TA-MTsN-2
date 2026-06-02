@@ -52,4 +52,11 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function siswa()
+   {
+       return $this->hasMany(Siswa::class, 'ortu_id'); // Sesuaikan 'ortu_id' dengan nama kolom di database Anda
+   }
+
+   
 }
