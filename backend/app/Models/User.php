@@ -54,9 +54,7 @@ class User extends Authenticatable
     }
 
     public function siswa()
-   {
-       return $this->hasMany(Siswa::class, 'ortu_id'); // Sesuaikan 'ortu_id' dengan nama kolom di database Anda
-   }
-
-   
+    {
+        return $this->hasMany(Siswa::class, 'ortu_id'); // Sesuaikan 'ortu_id' dengan nama kolom di database Anda
+    }
 }

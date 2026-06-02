@@ -121,21 +121,26 @@
 
         <!-- ALERTS -->
         @if (session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-2xl relative mb-4 shadow-sm"
                 role="alert">
-                <span class="block sm:inline font-bold">{{ session('success') }}</span>
+                <span class="block sm:inline font-bold"><i
+                        class="fas fa-check-circle mr-2"></i>{{ session('success') }}</span>
             </div>
         @endif
         @if (session('error'))
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <span class="block sm:inline font-bold">{{ session('error') }}</span>
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl relative mb-4 shadow-sm"
+                role="alert">
+                <span class="block sm:inline font-bold"><i
+                        class="fas fa-exclamation-triangle mr-2"></i>{{ session('error') }}</span>
             </div>
         @endif
         @if ($errors->any())
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-2xl relative mb-4 shadow-sm"
+                role="alert">
+                <p class="font-bold mb-1"><i class="fas fa-times-circle mr-2"></i>Terdapat kesalahan:</p>
                 <ul class="list-disc pl-5">
                     @foreach ($errors->all() as $error)
-                        <li class="text-sm font-bold">{{ $error }}</li>
+                        <li class="text-sm font-medium">{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
@@ -153,12 +158,12 @@
                     </div>
                     <div class="flex gap-3">
                         <button
-                            class="bg-[#1e293b] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-gray-800 transition flex items-center gap-2"
+                            class="bg-[#1e293b] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-gray-800 transition flex items-center gap-2 shadow-sm shadow-gray-200"
                             onclick="openImportModal()">
                             <i class="fas fa-file-excel text-green-400"></i> Import
                         </button>
                         <button
-                            class="bg-[#10b981] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-green-600 transition flex items-center gap-2"
+                            class="bg-[#10b981] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-green-600 transition flex items-center gap-2 shadow-sm shadow-green-100"
                             onclick="openAddSiswaModal()">
                             <i class="fas fa-user-plus"></i> Tambah Siswa
                         </button>
@@ -173,12 +178,12 @@
                         <i class="fas fa-search absolute left-4 top-[34px] text-gray-300 text-xs"></i>
                         <input type="text" name="search" value="{{ request('search') }}"
                             placeholder="Ketik nama atau NISN..."
-                            class="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-green-100 outline-none transition">
+                            class="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-100 outline-none transition">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tingkat</label>
                         <select name="tingkat"
-                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm outline-none transition">
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none">
                             <option value="">Semua Tingkat</option>
                             <option value="VII" {{ request('tingkat') == 'VII' ? 'selected' : '' }}>Kelas VII
                             </option>
@@ -192,7 +197,7 @@
                         <div class="flex-1">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Kelas</label>
                             <select name="kelas"
-                                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm outline-none transition">
+                                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none">
                                 <option value="">Semua Kelas</option>
                                 <option value="A" {{ request('kelas') == 'A' ? 'selected' : '' }}>A</option>
                                 <option value="B" {{ request('kelas') == 'B' ? 'selected' : '' }}>B</option>
@@ -207,68 +212,71 @@
                     </div>
                 </form>
 
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
-                        <tr>
-                            <th class="py-4 pl-6 rounded-tl-xl">NISN</th>
-                            <th class="py-4">Nama Siswa</th>
-                            <th class="py-4 text-center">Kelas</th>
-                            <th class="py-4 text-center">Kontak Ortu</th>
-                            <th class="py-4 text-center">Poin</th>
-                            <th class="py-4 pr-6 rounded-tr-xl text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-xs divide-y divide-gray-100">
-                        <!-- DATA SISWA DINAMIS -->
-                        @forelse($dataSiswa ?? [] as $siswa)
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="py-5 pl-6 text-gray-500 font-medium">{{ $siswa->nisn }}</td>
-                                <td class="py-5 font-bold text-gray-700">{{ $siswa->nama }}</td>
-                                <td class="py-5 text-center font-bold text-[#10b981]">{{ $siswa->kelas ?? '-' }}</td>
-                                <td class="py-5 text-center text-gray-500">{{ $siswa->kontak_ortu ?? '-' }}</td>
-                                <td class="py-5 text-center">
-                                    @if (($siswa->poin ?? 0) >= 100)
-                                        <span
-                                            class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
-                                    @elseif(($siswa->poin ?? 0) >= 50)
-                                        <span
-                                            class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
-                                    @elseif(($siswa->poin ?? 0) >= 25)
-                                        <span
-                                            class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
-                                    @else
-                                        <span
-                                            class="bg-green-50 text-green-600 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
-                                    @endif
-                                </td>
-                                <td class="py-5 pr-6 text-right">
-                                    <!-- Tombol Edit dgn Custom Data Attr -->
-                                    <button onclick="openEditSiswaModal(this)" data-nisn="{{ $siswa->nisn }}"
-                                        data-nama="{{ $siswa->nama }}" data-jk="{{ $siswa->jk }}"
-                                        data-kelas="{{ $siswa->kelas }}" data-kontak="{{ $siswa->kontak_ortu }}"
-                                        class="text-blue-500 hover:text-blue-700 mx-1 transition p-2 bg-blue-50 rounded-lg"
-                                        title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <!-- Tombol Hapus dgn Custom Data Attr -->
-                                    <button onclick="openDeleteSiswaModal(this)" data-nisn="{{ $siswa->nisn }}"
-                                        data-nama="{{ $siswa->nama }}"
-                                        class="text-red-500 hover:text-red-700 mx-1 transition p-2 bg-red-50 rounded-lg"
-                                        title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        @empty
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
                             <tr>
-                                <td colspan="6" class="py-10 text-center text-gray-400 font-bold">
-                                    <i class="fas fa-users text-2xl mb-2 block text-gray-300"></i>
-                                    Tidak ada data siswa yang ditemukan.
-                                </td>
+                                <th class="py-4 pl-6 rounded-tl-xl">NISN</th>
+                                <th class="py-4">Nama Siswa</th>
+                                <th class="py-4 text-center">Kelas</th>
+                                <th class="py-4 text-center">Kontak Ortu</th>
+                                <th class="py-4 text-center">Poin</th>
+                                <th class="py-4 pr-6 rounded-tr-xl text-right">Aksi</th>
                             </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="text-xs divide-y divide-gray-100">
+                            <!-- DATA SISWA DINAMIS -->
+                            @forelse($dataSiswa ?? [] as $siswa)
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="py-5 pl-6 text-gray-500 font-medium">{{ $siswa->nisn }}</td>
+                                    <td class="py-5 font-bold text-gray-700">{{ $siswa->nama }}</td>
+                                    <td class="py-5 text-center font-bold text-[#10b981]">{{ $siswa->kelas ?? '-' }}
+                                    </td>
+                                    <td class="py-5 text-center text-gray-500">{{ $siswa->kontak_ortu ?? '-' }}</td>
+                                    <td class="py-5 text-center">
+                                        @if (($siswa->poin ?? 0) >= 100)
+                                            <span
+                                                class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @elseif(($siswa->poin ?? 0) >= 50)
+                                            <span
+                                                class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @elseif(($siswa->poin ?? 0) >= 25)
+                                            <span
+                                                class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @else
+                                            <span
+                                                class="bg-green-50 text-green-600 px-3 py-1 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-5 pr-6 text-right">
+                                        <!-- Tombol Edit dgn Custom Data Attr -->
+                                        <button onclick="openEditSiswaModal(this)" data-nisn="{{ $siswa->nisn }}"
+                                            data-nama="{{ $siswa->nama }}" data-jk="{{ $siswa->jk }}"
+                                            data-kelas="{{ $siswa->kelas }}" data-kontak="{{ $siswa->kontak_ortu }}"
+                                            class="text-blue-500 hover:text-blue-700 mx-1 transition p-2 bg-blue-50 rounded-lg hover:bg-blue-100"
+                                            title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <!-- Tombol Hapus dgn Custom Data Attr -->
+                                        <button onclick="openDeleteSiswaModal(this)" data-nisn="{{ $siswa->nisn }}"
+                                            data-nama="{{ $siswa->nama }}"
+                                            class="text-red-500 hover:text-red-700 mx-1 transition p-2 bg-red-50 rounded-lg hover:bg-red-100"
+                                            title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="py-10 text-center text-gray-400 font-bold">
+                                        <i class="fas fa-users text-2xl mb-2 block text-gray-300"></i>
+                                        Tidak ada data siswa yang ditemukan.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
 
                 <div class="mt-6">
                     <!-- Paginasi Laravel -->
@@ -350,7 +358,7 @@
                                 class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Unggah
                                 Foto Profil Baru</label>
                             <input type="file" name="photo" accept="image/*"
-                                class="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50">
+                                class="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50 cursor-pointer">
                         </div>
                         <div>
                             <label
@@ -369,7 +377,7 @@
                             <label
                                 class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Gender</label>
                             <select name="gender"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none">
                                 <option value="">Pilih Gender</option>
                                 <option value="Laki-laki"
                                     {{ ($user['gender'] ?? '') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
@@ -400,8 +408,10 @@
     <!-- ============================================== -->
     <!-- MODAL IMPORT EXCEL -->
     <!-- ============================================== -->
-    <div id="importSiswaModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center">
-        <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center">
+    <div id="importSiswaModal"
+        class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center transform transition-all scale-95 opacity-0 duration-200"
+            id="importModalContent">
             <div
                 class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
                 <i class="fas fa-file-excel"></i>
@@ -415,10 +425,10 @@
                 <p class="font-bold mb-1 text-gray-800"><i class="fas fa-info-circle mr-1"></i> Format Kolom Baris 1
                     (Header):</p>
                 <ol class="list-decimal pl-4 space-y-1">
-                    <li><span class="font-bold text-gray-800">NISN</span> (Wajib, Angka)</li>
+                    <li><span class="font-bold text-gray-800">NISN</span> (Wajib, Angka 10 Digit)</li>
                     <li><span class="font-bold text-gray-800">Nama</span> (Wajib)</li>
                     <li><span class="font-bold text-gray-800">Jenis Kelamin</span> (Laki-laki/Perempuan)</li>
-                    <li><span class="font-bold text-gray-800">Kelas</span> (Wajib, Cth: VII-A)</li>
+                    <li><span class="font-bold text-gray-800">Kelas</span> (Wajib, Cth: VII.A)</li>
                     <li><span class="font-bold text-gray-800">Kontak Ortu</span> (Opsional)</li>
                 </ol>
             </div>
@@ -445,8 +455,10 @@
     <!-- ============================================== -->
     <!-- MODAL TAMBAH SISWA -->
     <!-- ============================================== -->
-    <div id="addSiswaModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center">
-        <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl">
+    <div id="addSiswaModal"
+        class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl transform transition-all scale-95 opacity-0 duration-200"
+            id="addModalContent">
             <div class="px-6 py-4 bg-[#10b981] text-white flex justify-between items-center">
                 <h3 class="font-bold text-lg">Tambah Data Siswa</h3>
                 <button onclick="closeModals()"
@@ -459,35 +471,43 @@
                         <label class="block text-xs font-bold text-gray-600 mb-1">NISN <span
                                 class="text-red-500">*</span></label>
                         <input type="text" name="nisn" required
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981]">
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981]"
+                            placeholder="10 digit angka">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap <span
                                 class="text-red-500">*</span></label>
                         <input type="text" name="nama" required
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981]">
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981]">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Jenis Kelamin</label>
                         <select name="jk"
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981]">
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] appearance-none bg-white">
                             <option value="">-- Pilih --</option>
                             <option value="Laki-laki">Laki-laki</option>
                             <option value="Perempuan">Perempuan</option>
                         </select>
                     </div>
+
+                    <!-- DROPDOWN KELAS (DARI CONTROLLER) -->
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Kelas <span
                                 class="text-red-500">*</span></label>
-                        <input type="text" name="kelas" required
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981]"
-                            placeholder="Contoh: IX-A">
+                        <select name="kelas" required
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] appearance-none bg-white">
+                            <option value="">-- Pilih Kelas --</option>
+                            @foreach ($daftarKelas ?? [] as $kelasItem)
+                                <option value="{{ $kelasItem }}">{{ $kelasItem }}</option>
+                            @endforeach
+                        </select>
                     </div>
+
                     <div class="col-span-2">
                         <label class="block text-xs font-bold text-gray-600 mb-1">Kontak Orang Tua / Wali (No.
                             WA)</label>
                         <input type="text" name="kontak_ortu"
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981]"
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981]"
                             placeholder="Contoh: 08123456789">
                     </div>
                 </div>
@@ -505,8 +525,10 @@
     <!-- ============================================== -->
     <!-- MODAL EDIT SISWA -->
     <!-- ============================================== -->
-    <div id="editSiswaModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center">
-        <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl">
+    <div id="editSiswaModal"
+        class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl transform transition-all scale-95 opacity-0 duration-200"
+            id="editModalContent">
             <div class="px-6 py-4 bg-blue-500 text-white flex justify-between items-center">
                 <h3 class="font-bold text-lg">Edit Data Siswa</h3>
                 <button onclick="closeModals()"
@@ -525,28 +547,36 @@
                         <label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap <span
                                 class="text-red-500">*</span></label>
                         <input type="text" name="nama" id="edit_nama" required
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Jenis Kelamin</label>
                         <select name="jk" id="edit_jk"
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none bg-white">
                             <option value="">-- Pilih --</option>
                             <option value="Laki-laki">Laki-laki</option>
                             <option value="Perempuan">Perempuan</option>
                         </select>
                     </div>
+
+                    <!-- DROPDOWN KELAS (DARI CONTROLLER) -->
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Kelas <span
                                 class="text-red-500">*</span></label>
-                        <input type="text" name="kelas" id="edit_kelas" required
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                        <select name="kelas" id="edit_kelas" required
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none bg-white">
+                            <option value="">-- Pilih Kelas --</option>
+                            @foreach ($daftarKelas ?? [] as $kelasItem)
+                                <option value="{{ $kelasItem }}">{{ $kelasItem }}</option>
+                            @endforeach
+                        </select>
                     </div>
+
                     <div class="col-span-2">
                         <label class="block text-xs font-bold text-gray-600 mb-1">Kontak Orang Tua / Wali (No.
                             WA)</label>
                         <input type="text" name="kontak_ortu" id="edit_kontak_ortu"
-                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
@@ -563,8 +593,10 @@
     <!-- ============================================== -->
     <!-- MODAL HAPUS SISWA -->
     <!-- ============================================== -->
-    <div id="deleteSiswaModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center">
-        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center">
+    <div id="deleteSiswaModal"
+        class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center transform transition-all scale-95 opacity-0 duration-200"
+            id="deleteModalContent">
             <div
                 class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -623,28 +655,51 @@
         }
 
         function closeModals() {
-            // Gunakan optional chaining (?.) untuk mencegah error Cannot read property classList of null
-            document.getElementById('addSiswaModal')?.classList.add('hidden');
-            document.getElementById('editSiswaModal')?.classList.add('hidden');
-            document.getElementById('deleteSiswaModal')?.classList.add('hidden');
-            document.getElementById('importSiswaModal')?.classList.add('hidden');
+            // Animasi tutup modal
+            const contents = ['importModalContent', 'addModalContent', 'editModalContent', 'deleteModalContent'];
+            contents.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('scale-100', 'opacity-100');
+                    el.classList.add('scale-95', 'opacity-0');
+                }
+            });
+
+            setTimeout(() => {
+                document.getElementById('addSiswaModal')?.classList.add('hidden');
+                document.getElementById('editSiswaModal')?.classList.add('hidden');
+                document.getElementById('deleteSiswaModal')?.classList.add('hidden');
+                document.getElementById('importSiswaModal')?.classList.add('hidden');
+            }, 200);
+        }
+
+        function openModalWithAnimation(modalId, contentId) {
+            closeModals();
+            setTimeout(() => {
+                document.getElementById(modalId)?.classList.remove('hidden');
+                document.getElementById(modalId)?.classList.add('flex');
+                setTimeout(() => {
+                    const content = document.getElementById(contentId);
+                    if (content) {
+                        content.classList.remove('scale-95', 'opacity-0');
+                        content.classList.add('scale-100', 'opacity-100');
+                    }
+                }, 10);
+            }, 210);
         }
 
         function openImportModal() {
-            closeModals();
-            document.getElementById('importSiswaModal')?.classList.remove('hidden');
+            openModalWithAnimation('importSiswaModal', 'importModalContent');
         }
 
         function openAddSiswaModal() {
-            closeModals();
-            document.getElementById('addSiswaModal')?.classList.remove('hidden');
+            openModalWithAnimation('addSiswaModal', 'addModalContent');
         }
 
         function openEditSiswaModal(btn) {
-            closeModals();
-            document.getElementById('editSiswaModal')?.classList.remove('hidden');
+            openModalWithAnimation('editSiswaModal', 'editModalContent');
 
-            // Ambil data dengan metode getAttribute untuk menghindari bug dari karakter khusus
+            // Ambil data dengan metode getAttribute
             let nisn = btn.getAttribute('data-nisn');
             let nama = btn.getAttribute('data-nama');
             let jk = btn.getAttribute('data-jk');
@@ -663,8 +718,7 @@
         }
 
         function openDeleteSiswaModal(btn) {
-            closeModals();
-            document.getElementById('deleteSiswaModal')?.classList.remove('hidden');
+            openModalWithAnimation('deleteSiswaModal', 'deleteModalContent');
 
             let nisn = btn.getAttribute('data-nisn');
             let nama = btn.getAttribute('data-nama');

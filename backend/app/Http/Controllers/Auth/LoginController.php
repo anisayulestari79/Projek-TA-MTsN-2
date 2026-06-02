@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Guru;
+use App\Models\Siswa; // Tambahan untuk memanggil model Siswa
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
@@ -101,7 +102,7 @@ class LoginController extends Controller
                 'photo'    => $user->photo,
             ]);
 
-            return redirect()->route('kamad.kamad-dashboard')->with('success', 'Selamat datang di Panel Pimpinan.');
+            return redirect()->route('kamad.dashboard')->with('success', 'Selamat datang di Panel Pimpinan.');
         } catch (\Exception $e) {
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -260,18 +261,32 @@ class LoginController extends Controller
     }
 
     // ==========================================================
-    // REGISTER ORANG TUA
+    // REGISTER ORANG TUA (DENGAN SINKRONISASI NISN OTOMATIS)
     // ==========================================================
     public function registerOrtu(Request $request)
     {
+        // 1. Validasi Input, termasuk NISN yang wajib 10 angka
         $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|string|email|max:255|unique:users,email',
+            'nisn'     => 'required|numeric|digits:10', // Wajib 10 digit angka
             'password' => 'required|string|min:6|confirmed',
+        ], [
+            'nisn.digits' => 'NISN harus berisi tepat 10 angka.',
+            'nisn.numeric' => 'NISN hanya boleh berisi angka.'
         ]);
 
         try {
-            User::create([
+            // 2. Cek apakah NISN tersebut benar-benar ada di tabel siswa
+            $siswa = Siswa::where('nisn', $request->nisn)->first();
+
+            if (!$siswa) {
+                // Jika NISN tidak ditemukan di database, tolak pendaftaran
+                return back()->withErrors(['nisn' => 'NISN tidak ditemukan di sistem madrasah. Pastikan 10 digit NISN anak Anda benar.'])->withInput();
+            }
+
+            // 3. Jika NISN valid, Buat akun Orang Tua
+            $user = User::create([
                 'name'     => $request->name,
                 'email'    => $request->email,
                 'password' => Hash::make($request->password),
@@ -280,7 +295,13 @@ class LoginController extends Controller
                 'username' => explode('@', $request->email)[0] . rand(100, 999),
             ]);
 
-            return redirect()->route('ortu.login')->with('success', 'Pendaftaran berhasil! Silakan masuk dengan email dan password Anda.');
+            // 4. Hubungkan secara OTOMATIS: Update kolom ortu_id pada data siswa dengan ID user orang tua yang baru dibuat
+            $siswa->update([
+                'ortu_id' => $user->id
+            ]);
+
+            // 5. Redirect ke halaman login dengan pesan sukses yang menyertakan nama anak
+            return redirect()->route('ortu.login')->with('success', 'Pendaftaran berhasil! Akun Anda telah otomatis terhubung dengan data ananda ' . $siswa->nama . '. Silakan masuk.');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()])->withInput();
         }

@@ -12,7 +12,7 @@ use App\Http\Controllers\Api\GuruController;
 use App\Http\Controllers\Api\SiswaController;
 use App\Http\Controllers\Api\PoinController;
 use App\Http\Controllers\OrtuController;
-use App\Http\Controllers\OrtuAuthController; 
+use App\Http\Controllers\OrtuAuthController;
 
 // =======================================================
 // 1. PUBLIC ROUTES (Halaman Utama)
@@ -126,21 +126,26 @@ Route::middleware('web')->group(function () {
     });
 
     Route::middleware(['auth', 'role:ortu'])->group(function () {
-       Route::get('/dashboard-ortu', [OrtuController::class, 'index'])->name('ortu.dashboard');
-   });
+        Route::get('/dashboard-ortu', [OrtuController::class, 'index'])->name('ortu.dashboard');
+    });
 
-   // Grup rute untuk tamu (belum login)
-   Route::middleware('guest')->group(function () {
-       Route::get('/login-ortu', [OrtuAuthController::class, 'showLogin'])->name('ortu.login');
-       Route::post('/login-ortu', [OrtuAuthController::class, 'login'])->name('ortu.login.submit');
-       
-       Route::get('/register-ortu', [OrtuAuthController::class, 'showRegister'])->name('ortu.register');
-       Route::post('/register-ortu', [OrtuAuthController::class, 'register'])->name('ortu.register.submit');
-   });
+    // Grup rute untuk tamu (belum login)
+    Route::middleware('guest')->group(function () {
+        Route::get('/login-ortu', [OrtuAuthController::class, 'showLogin'])->name('ortu.login');
+        Route::post('/login-ortu', [OrtuAuthController::class, 'login'])->name('ortu.login.submit');
 
-   // Grup rute yang harus masuk (sudah login)
-   Route::middleware(['auth'])->group(function () {
-       Route::get('/dashboard-ortu', [OrtuController::class, 'index'])->name('ortu.dashboard');
-       Route::post('/logout-ortu', [OrtuAuthController::class, 'logout'])->name('ortu.logout');
-   });
+        Route::get('/register-ortu', [OrtuAuthController::class, 'showRegister'])->name('ortu.register');
+        Route::post('/register-ortu', [OrtuAuthController::class, 'register'])->name('ortu.register.submit');
+    });
+
+    // Grup rute yang harus masuk (sudah login)
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/dashboard-ortu', [OrtuController::class, 'index'])->name('ortu.dashboard');
+        Route::post('/logout-ortu', [OrtuAuthController::class, 'logout'])->name('ortu.logout');
+    });
+
+    // --- DASHBOARD & FITUR ORANG TUA ---
+    Route::get('/ortu/dashboard', [App\Http\Controllers\OrtuController::class, 'index'])->name('ortu.dashboard');
+    Route::get('/ortu/konsultasi', [App\Http\Controllers\OrtuController::class, 'konsultasi'])->name('ortu.konsultasi');
+    Route::post('/ortu/konsultasi/kirim', [App\Http\Controllers\OrtuController::class, 'kirimKonsultasi'])->name('ortu.konsultasi.kirim');
 });

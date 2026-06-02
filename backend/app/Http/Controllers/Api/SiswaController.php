@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Session; // <-- Tambahan Library Session
+use Illuminate\Support\Facades\Session;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SiswaController extends Controller
@@ -41,6 +41,19 @@ class SiswaController extends Controller
         // Gunakan paginate() agar tabelnya rapi di web
         $siswa = $query->orderBy('nama')->paginate(10)->withQueryString();
 
+        // ========================================================
+        // TAMBAHAN: Generate Daftar Kelas Otomatis (VII.A s/d IX.K)
+        // ========================================================
+        $tingkatList = ['VII', 'VIII', 'IX'];
+        $abjadList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
+        $daftarKelas = [];
+
+        foreach ($tingkatList as $tingkat) {
+            foreach ($abjadList as $abjad) {
+                $daftarKelas[] = $tingkat . '.' . $abjad;
+            }
+        }
+
         // Jika dipanggil lewat API, kembalikan JSON
         if ($request->wantsJson() || $request->is('api/*')) {
             // Untuk API, jika ingin mengembalikan semua data tanpa pagination bisa disesuaikan
@@ -50,10 +63,11 @@ class SiswaController extends Controller
             ]);
         }
 
-        // Jika dipanggil lewat Browser Web, kembalikan tampilan Blade
+        // Jika dipanggil lewat Browser Web, kembalikan tampilan Blade beserta daftarKelas
         return view('admin.admin-datasiswa', [
             'dataSiswa' => $siswa,
-            'user' => $user
+            'user' => $user,
+            'daftarKelas' => $daftarKelas // <-- Variabel ini dikirim ke tampilan
         ]);
     }
 
@@ -79,13 +93,20 @@ class SiswaController extends Controller
 
     public function store(Request $request)
     {
+        // PERBAIKAN VALIDASI: Memaksa NISN harus angka (numeric) dan pas 10 digit (digits:10)
         $validator = Validator::make($request->all(), [
-            'nisn' => 'required|string|unique:siswa,nisn',
+            'nisn' => 'required|numeric|digits:10|unique:siswa,nisn', // Atau unique:siswas,nisn (sesuaikan nama tabel di DB)
             'nama' => 'required|string',
             'jk' => 'nullable|in:Laki-laki,Perempuan',
             'kelas' => 'required|string',
             'kontak_ortu' => 'nullable|string',
             'photo' => 'nullable|string',
+        ], [
+            // Custom Error Messages agar tampilannya ramah pengguna
+            'nisn.required' => 'NISN wajib diisi!',
+            'nisn.numeric'  => 'NISN hanya boleh berisi angka!',
+            'nisn.digits'   => 'NISN harus berjumlah persis 10 angka!',
+            'nisn.unique'   => 'NISN ini sudah terdaftar di dalam sistem!'
         ]);
 
         if ($validator->fails()) {
@@ -96,7 +117,7 @@ class SiswaController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Gagal menambah data! Periksa kembali isian (pastikan NISN belum terdaftar).');
+            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Gagal menambah data! Periksa kembali isian Anda.');
         }
 
         $siswa = Siswa::create([
