@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Siswa;
+use App\Models\Kelas; // <-- WAJIB DITAMBAHKAN UNTUK MEMANGGIL TABEL KELAS
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Session;
@@ -19,12 +20,12 @@ class SiswaController extends Controller
         // Load siswa beserta jumlah riwayat poin-nya
         $query = Siswa::withCount('riwayatPoin');
 
-        // Filter by tingkat
+        // Filter by tingkat (Mungkin string ini perlu disesuaikan jika inputnya "VII" bukan "7")
         if ($request->has('tingkat') && $request->tingkat != '') {
             $query->where('kelas', 'like', $request->tingkat . '%');
         }
 
-        // Filter by kelas (A, B, C, dll)
+        // Filter by kelas (Misal: A, B, C)
         if ($request->has('kelas') && $request->kelas != '') {
             $query->where('kelas', 'like', '%' . $request->kelas);
         }
@@ -42,21 +43,17 @@ class SiswaController extends Controller
         $siswa = $query->orderBy('nama')->paginate(10)->withQueryString();
 
         // ========================================================
-        // TAMBAHAN: Generate Daftar Kelas Otomatis (VII.A s/d IX.K)
+        // PERBAIKAN: Mengambil Daftar Kelas langsung dari Database Master
         // ========================================================
-        $tingkatList = ['VII', 'VIII', 'IX'];
-        $abjadList = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
-        $daftarKelas = [];
-
-        foreach ($tingkatList as $tingkat) {
-            foreach ($abjadList as $abjad) {
-                $daftarKelas[] = $tingkat . '.' . $abjad;
-            }
-        }
+        // Menggunakan pluck() agar hasilnya langsung berupa daftar teks (array of strings)
+        // Contoh output: ['VII A', 'VII B', 'VIII A', ...]
+        $daftarKelas = Kelas::orderBy('tingkat', 'asc')
+            ->orderBy('nama_kelas', 'asc')
+            ->pluck('nama_kelas')
+            ->toArray();
 
         // Jika dipanggil lewat API, kembalikan JSON
         if ($request->wantsJson() || $request->is('api/*')) {
-            // Untuk API, jika ingin mengembalikan semua data tanpa pagination bisa disesuaikan
             return response()->json([
                 'success' => true,
                 'data' => $siswa
@@ -219,5 +216,5 @@ class SiswaController extends Controller
         return redirect()->back()->with('success', 'Data Siswa berhasil dihapus!');
     }
 
-    // ... function importExcel biarkan seperti sedia kala ...
+    // ... function importExcel biarkan seperti sedia kala jika ada ...
 }

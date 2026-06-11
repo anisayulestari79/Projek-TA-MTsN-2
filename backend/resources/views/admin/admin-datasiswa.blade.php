@@ -428,7 +428,7 @@
                     <li><span class="font-bold text-gray-800">NISN</span> (Wajib, Angka 10 Digit)</li>
                     <li><span class="font-bold text-gray-800">Nama</span> (Wajib)</li>
                     <li><span class="font-bold text-gray-800">Jenis Kelamin</span> (Laki-laki/Perempuan)</li>
-                    <li><span class="font-bold text-gray-800">Kelas</span> (Wajib, Cth: VII.A)</li>
+                    <li><span class="font-bold text-gray-800">Kelas</span> (Wajib, Cth: VII A)</li>
                     <li><span class="font-bold text-gray-800">Kontak Ortu</span> (Opsional)</li>
                 </ol>
             </div>
@@ -484,7 +484,7 @@
                         <label class="block text-xs font-bold text-gray-600 mb-1">Jenis Kelamin</label>
                         <select name="jk"
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] appearance-none bg-white">
-                            <option value="">-- Pilih --</option>
+                            <option value=""> Pilih </option>
                             <option value="Laki-laki">Laki-laki</option>
                             <option value="Perempuan">Perempuan</option>
                         </select>
@@ -496,7 +496,7 @@
                                 class="text-red-500">*</span></label>
                         <select name="kelas" required
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] appearance-none bg-white">
-                            <option value="">-- Pilih Kelas --</option>
+                            <option value=""> Pilih Kelas </option>
                             @foreach ($daftarKelas ?? [] as $kelasItem)
                                 <option value="{{ $kelasItem }}">{{ $kelasItem }}</option>
                             @endforeach
@@ -553,7 +553,7 @@
                         <label class="block text-xs font-bold text-gray-600 mb-1">Jenis Kelamin</label>
                         <select name="jk" id="edit_jk"
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none bg-white">
-                            <option value="">-- Pilih --</option>
+                            <option value=""> Pilih </option>
                             <option value="Laki-laki">Laki-laki</option>
                             <option value="Perempuan">Perempuan</option>
                         </select>
@@ -565,7 +565,7 @@
                                 class="text-red-500">*</span></label>
                         <select name="kelas" id="edit_kelas" required
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none bg-white">
-                            <option value="">-- Pilih Kelas --</option>
+                            <option value=""> Pilih Kelas </option>
                             @foreach ($daftarKelas ?? [] as $kelasItem)
                                 <option value="{{ $kelasItem }}">{{ $kelasItem }}</option>
                             @endforeach

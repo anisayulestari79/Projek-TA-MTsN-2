@@ -9,34 +9,54 @@ class Consultation extends Model
 {
     use HasFactory;
 
-    // Menentukan nama tabel secara eksplisit (opsional, karena Laravel akan menebak 'consultations' secara otomatis dari nama model)
     protected $table = 'consultations';
 
     protected $fillable = [
-        'academic_period_id', // Jika ini wajib diisi, pastikan di controller juga disiapkan datanya
+        'academic_period',
         'student_id',
         'parent_id',
-        'bk_id', // Boleh kosong jika pesan baru dikirim (belum dibaca guru BK tertentu)
+        'bk_id',
         'topic',
         'message',
         'reply',
-        'status'
+        'status',
+        'pengirim',
     ];
 
-    // Relasi untuk mengetahui siapa orang tuanya
-    public function ortu()
-    {
-        return $this->belongsTo(User::class, 'parent_id');
-    }
+    // =======================================================
+    // RELASI DATABASE (Dibuat ganda agar kebal error di semua view)
+    // =======================================================
 
     // Relasi untuk mengetahui anak siapa yang dikonsultasikan
     public function siswa()
     {
         return $this->belongsTo(Siswa::class, 'student_id');
     }
+    public function student()
+    {
+        return $this->belongsTo(Siswa::class, 'student_id');
+    }
 
-    // Relasi ke guru BK (jika diperlukan)
+    // Relasi untuk mengetahui siapa orang tuanya
+    public function ortu()
+    {
+        return $this->belongsTo(User::class, 'parent_id');
+    }
+    public function parent()
+    {
+        return $this->belongsTo(User::class, 'parent_id');
+    }
+
+    // Relasi ke guru BK
     public function guruBk()
+    {
+        return $this->belongsTo(User::class, 'bk_id');
+    }
+    public function bk()
+    {
+        return $this->belongsTo(User::class, 'bk_id');
+    }
+    public function guru()
     {
         return $this->belongsTo(User::class, 'bk_id');
     }

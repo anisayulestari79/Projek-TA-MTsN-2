@@ -94,7 +94,6 @@
                 $statusTeks = 'Waspada Panggilan I';
             }
 
-            // Data user (orang tua)
             $user = Auth::user();
         @endphp
 
@@ -116,13 +115,13 @@
                     class="flex items-center gap-4 bg-white px-6 py-2.5 rounded-full shadow-sm border border-gray-100 transition hover:shadow-md focus:outline-none">
                     <div class="text-right">
                         <p class="text-xs font-black text-[#10b981] uppercase leading-none">
-                            {{ Auth::user()->name ?? 'Wali Murid' }}</p>
+                            {{ $user->name ?? 'Wali Murid' }}</p>
                         <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">
                             Wali Dari {{ isset($daftarAnak) ? count($daftarAnak) : 0 }} Anak
                         </p>
                     </div>
-                    <!-- PERBAIKAN: Memastikan foto yang dikirim dari database (jika ada) menggunakan asset() jika berupa path lokal, atau langsung gunakan jika berupa URL -->
-                    <img src="{{ isset(Auth::user()->photo) && Auth::user()->photo ? (filter_var(Auth::user()->photo, FILTER_VALIDATE_URL) ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name ?? 'Wali Murid') . '&background=10b981&color=fff' }}"
+
+                    <img src="{{ isset($user->photo) && $user->photo ? (filter_var($user->photo, FILTER_VALIDATE_URL) ? $user->photo : asset('storage/' . $user->photo)) : 'https://ui-avatars.com/api/?name=' . urlencode($user->name ?? 'Wali Murid') . '&background=10b981&color=fff' }}"
                         class="w-10 h-10 rounded-full border-2 border-green-50 shadow-sm object-cover" alt="Profile">
                     <i class="fas fa-chevron-down text-gray-400 text-xs ml-1"></i>
                 </button>
@@ -131,12 +130,20 @@
                 <div id="profileDropdownMenu"
                     class="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95">
                     <div class="py-2">
-                        <!-- Mengubah dari href="#" menjadi onclick untuk memanggil view Profil -->
                         <button type="button"
                             onclick="showView('profile'); document.getElementById('profileDropdownMenu').classList.add('hidden');"
                             class="w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
                             <i class="fas fa-user"></i> Profil Anda
                         </button>
+
+                        @if (isset($daftarAnak) && count($daftarAnak) > 0)
+                            <button type="button"
+                                onclick="showView('profil-siswa'); document.getElementById('profileDropdownMenu').classList.add('hidden');"
+                                class="w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition flex items-center gap-3">
+                                <i class="fas fa-user-graduate"></i> Profil Siswa
+                            </button>
+                        @endif
+
                         <div class="border-t border-gray-100 my-1"></div>
                         <a href="#"
                             onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
@@ -158,6 +165,13 @@
                 class="bg-green-100 border border-green-200 text-green-700 px-5 py-4 rounded-2xl mb-8 shadow-sm flex items-center gap-3">
                 <i class="fas fa-check-circle text-xl"></i>
                 <span class="font-bold text-sm tracking-wide">{{ session('success') }}</span>
+            </div>
+        @endif
+        @if (session('error'))
+            <div
+                class="bg-red-100 border border-red-200 text-red-700 px-5 py-4 rounded-2xl mb-8 shadow-sm flex items-center gap-3">
+                <i class="fas fa-exclamation-triangle text-xl"></i>
+                <span class="font-bold text-sm tracking-wide">{{ session('error') }}</span>
             </div>
         @endif
 
@@ -218,10 +232,28 @@
 
                         <!-- Deskripsi Status -->
                         <div class="flex-1 relative z-10 text-center md:text-left">
-                            <div
-                                class="inline-block px-4 py-1.5 bg-{{ $statusWarna }}-100 text-{{ $statusWarna }}-700 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border border-{{ $statusWarna }}-200">
-                                Status: {{ $statusTeks }}
+                            <div class="flex gap-2 mb-4 justify-center md:justify-start">
+                                <div
+                                    class="inline-block px-4 py-1.5 bg-{{ $statusWarna }}-100 text-{{ $statusWarna }}-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-{{ $statusWarna }}-200">
+                                    Status: {{ $statusTeks }}
+                                </div>
+
+                                <!-- Indikator Siswa Aktif / Lulus -->
+                                @php
+                                    $statusPendidikan = $siswaAktif->status ?? 'Aktif';
+                                    $bgStatus =
+                                        $statusPendidikan == 'Aktif'
+                                            ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                            : ($statusPendidikan == 'Lulus'
+                                                ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                                                : 'bg-red-100 text-red-700 border-red-200');
+                                @endphp
+                                <div
+                                    class="inline-block px-4 py-1.5 {{ $bgStatus }} rounded-full text-[10px] font-black uppercase tracking-widest border">
+                                    Siswa {{ $statusPendidikan }}
+                                </div>
                             </div>
+
                             <h3 class="text-2xl font-black text-gray-700 uppercase tracking-tight mb-3">
                                 Laporan Ananda <span class="text-[#10b981]">{{ $siswaAktif->nama }}</span>
                             </h3>
@@ -242,7 +274,7 @@
                                 @endif
                             </p>
 
-                            <!-- TOMBOL LIHAT DETAIL RIWAYAT (Memanggil fungsi showView) -->
+                            <!-- TOMBOL LIHAT DETAIL RIWAYAT -->
                             <button type="button" onclick="showView('detail-riwayat')"
                                 class="inline-flex bg-[#10b981] hover:bg-green-600 transition text-white px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 items-center justify-center cursor-pointer">
                                 <i class="fas fa-list-ul mr-2"></i> Lihat Detail Riwayat
@@ -260,7 +292,7 @@
                         <!-- Grid 3 Kartu Sanksi -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
 
-                            <!-- Tahap I (25 Poin) -->
+                            <!-- Tahap I -->
                             <div
                                 class="p-8 rounded-[30px] {{ $poinAktif >= 25 ? 'bg-red-50 border border-red-200 shadow-sm' : 'bg-white border border-gray-100 opacity-80' }} relative overflow-hidden flex flex-col justify-between transition-all">
                                 @if ($poinAktif >= 25)
@@ -299,7 +331,7 @@
                                 </div>
                             </div>
 
-                            <!-- Tahap II (50 Poin) -->
+                            <!-- Tahap II -->
                             <div
                                 class="p-8 rounded-[30px] {{ $poinAktif >= 50 ? 'bg-red-50 border border-red-200 shadow-sm' : ($poinAktif >= 25 ? 'bg-white border-2 border-yellow-400 shadow-xl' : 'bg-white border border-gray-100 opacity-80') }} relative overflow-hidden flex flex-col justify-between transition-all">
                                 @if ($poinAktif >= 25 && $poinAktif < 50)
@@ -353,7 +385,7 @@
                                 @endif
                             </div>
 
-                            <!-- Tahap III (100 Poin) -->
+                            <!-- Tahap III -->
                             <div
                                 class="p-8 rounded-[30px] {{ $poinAktif >= 100 ? 'bg-red-900 border-red-900 shadow-xl' : ($poinAktif >= 50 ? 'bg-white border-2 border-orange-400 shadow-xl' : 'bg-white border border-gray-100 opacity-80') }} relative overflow-hidden flex flex-col justify-between transition-all">
                                 <div class="relative z-10">
@@ -406,7 +438,6 @@
                         </div>
                     </div>
                 @else
-                    <!-- Tampilan Jika Belum Ada Siswa -->
                     <div
                         class="bg-white p-12 rounded-[40px] shadow-sm border border-gray-50 text-center flex flex-col items-center justify-center">
                         <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
@@ -438,7 +469,6 @@
                     </button>
                 </div>
 
-                <!-- Info Siswa -->
                 @if (isset($siswaAktif))
                     <div
                         class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 mb-8 flex flex-wrap gap-x-12 gap-y-4">
@@ -461,7 +491,6 @@
                         </div>
                     </div>
 
-                    <!-- Tabel Riwayat Poin -->
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-[600px]">
                             <thead class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
@@ -473,7 +502,6 @@
                                 </tr>
                             </thead>
                             <tbody id="tabel-riwayat-body" class="text-xs divide-y divide-gray-100">
-                                <!-- Menampilkan pesan loading sementara sebelum AJAX selesai -->
                                 <tr>
                                     <td colspan="4" class="py-8 text-center text-gray-400 font-bold">
                                         <i class="fas fa-spinner fa-spin mr-2"></i> Memuat data riwayat...
@@ -487,57 +515,158 @@
         </div>
 
         <!-- ============================================== -->
+        <!-- VIEW: PROFIL SISWA (DAFTAR ANAK) -->
+        <!-- ============================================== -->
+        @if (isset($daftarAnak) && count($daftarAnak) > 0)
+            <div id="view-profil-siswa" class="view-section">
+                <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+                    <h3 class="text-lg font-black text-gray-700 uppercase tracking-widest">Profil Siswa (Anak)</h3>
+                    <button type="button" onclick="showView('dashboard')"
+                        class="text-gray-400 hover:text-red-500 transition"><i
+                            class="fas fa-times text-xl"></i></button>
+                </div>
+
+                <!-- Grid untuk menampilkan semua anak -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    @foreach ($daftarAnak as $anak)
+                        <div
+                            class="bg-white p-6 rounded-[30px] shadow-sm border border-gray-50 flex flex-col items-center relative">
+                            <!-- Foto Siswa (Diperkecil) -->
+                            <div
+                                class="w-20 h-20 shrink-0 rounded-2xl overflow-hidden border-2 border-blue-50 shadow-sm mb-4">
+                                @if ($anak->photo)
+                                    <img src="{{ filter_var($anak->photo, FILTER_VALIDATE_URL) ? $anak->photo : asset('storage/' . $anak->photo) }}"
+                                        class="w-full h-full object-cover">
+                                @else
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($anak->nama) }}&background=2563eb&color=fff&size=120"
+                                        class="w-full h-full object-cover">
+                                @endif
+                            </div>
+
+                            <!-- Detail Data Anak -->
+                            <div class="w-full text-center">
+                                <h4 class="font-black text-gray-800 text-sm uppercase leading-tight mb-1">
+                                    {{ $anak->nama }}</h4>
+                                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-4">Kelas
+                                    {{ $anak->kelas }}</p>
+
+                                <div class="space-y-2 text-left">
+                                    <div
+                                        class="flex justify-between items-center text-xs border-b border-gray-50 pb-2">
+                                        <span class="text-gray-400 font-bold uppercase text-[9px]">NISN</span>
+                                        <span class="font-black text-gray-700">{{ $anak->nisn }}</span>
+                                    </div>
+                                    <div
+                                        class="flex justify-between items-center text-xs border-b border-gray-50 pb-2">
+                                        <span class="text-gray-400 font-bold uppercase text-[9px]">Gender</span>
+                                        <span class="font-black text-gray-700">{{ $anak->jk ?? '-' }}</span>
+                                    </div>
+
+                                    <!-- TAMBAHAN: Nama Orang Tua / Wali -->
+                                    <div
+                                        class="flex justify-between items-center text-xs border-b border-gray-50 pb-2">
+                                        <span class="text-gray-400 font-bold uppercase text-[9px]">Wali</span>
+                                        <span class="font-black text-gray-700">{{ $user->name ?? '-' }}</span>
+                                    </div>
+
+                                    <!-- TAMBAHAN: Alamat -->
+                                    <div class="flex justify-between items-start text-xs border-b border-gray-50 pb-2">
+                                        <span class="text-gray-400 font-bold uppercase text-[9px] mt-0.5">Alamat</span>
+                                        <span
+                                            class="font-black text-gray-700 text-right max-w-[60%] leading-snug">{{ $anak->alamat ?? 'Belum diisi' }}</span>
+                                    </div>
+
+                                    <!-- Status Aktif / Lulus -->
+                                    <div class="flex justify-between items-center pt-2">
+                                        <span class="text-gray-400 font-bold uppercase text-[9px]">Status</span>
+                                        @php
+                                            $statusPendidikan = $anak->status ?? 'Aktif';
+                                            $warnaStatus =
+                                                $statusPendidikan == 'Aktif'
+                                                    ? 'bg-blue-50 text-blue-600 border-blue-100'
+                                                    : ($statusPendidikan == 'Lulus'
+                                                        ? 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                                                        : 'bg-red-50 text-red-600 border-red-100');
+                                        @endphp
+                                        <span
+                                            class="px-2 py-1 rounded-md border font-black text-[9px] uppercase {{ $warnaStatus }}">
+                                            {{ $statusPendidikan }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+
+                    <!-- KARTU TAMBAH ANAK LAIN -->
+                    <button onclick="openTambahAnakModal()"
+                        class="border-2 border-dashed border-gray-300 rounded-[30px] p-6 flex flex-col items-center justify-center hover:bg-gray-50 hover:border-[#10b981] transition text-gray-400 hover:text-[#10b981] min-h-[300px] group">
+                        <div
+                            class="w-16 h-16 rounded-full bg-gray-100 group-hover:bg-green-50 flex items-center justify-center mb-4 transition">
+                            <i class="fas fa-user-plus text-2xl"></i>
+                        </div>
+                        <span class="font-black text-sm uppercase tracking-widest">Kaitkan Anak Lain</span>
+                        <span class="text-[10px] text-gray-400 mt-2 text-center px-4">Masukkan NISN anak Anda yang lain
+                            untuk menambahkannya.</span>
+                    </button>
+                </div>
+            </div>
+        @endif
+
+        <!-- ============================================== -->
         <!-- VIEW: PROFILE PENGGUNA (ORANG TUA) -->
         <!-- ============================================== -->
         <div id="view-profile" class="view-section">
-            <div class="bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 max-w-2xl mx-auto">
+            <div class="bg-white p-8 rounded-[40px] shadow-sm border border-gray-50 max-w-xl mx-auto relative">
+
                 <!-- Profile Display -->
                 <div id="profileView" class="flex flex-col items-center">
+                    <!-- Foto Profil Ortu Diperkecil Sedikit -->
                     <div
-                        class="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-green-50 shadow-sm relative group">
-                        <!-- PERBAIKAN: Menggunakan urlencode pada gambar profil besar -->
-                        @if (isset(Auth::user()->photo) && Auth::user()->photo)
-                            <img src="{{ filter_var(Auth::user()->photo, FILTER_VALIDATE_URL) ? Auth::user()->photo : asset('storage/' . Auth::user()->photo) }}"
+                        class="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-green-50 shadow-sm relative group">
+                        @if (isset($user->photo) && $user->photo)
+                            <img src="{{ filter_var($user->photo, FILTER_VALIDATE_URL) ? $user->photo : asset('storage/' . $user->photo) }}"
                                 class="w-full h-full object-cover" id="mainProfilePic" alt="Profile Picture">
                         @else
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Wali Murid') }}&background=10b981&color=fff&size=128"
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name ?? 'Wali Murid') }}&background=10b981&color=fff&size=128"
                                 class="w-full h-full object-cover" id="mainProfilePic" alt="Profile Picture">
                         @endif
                     </div>
-                    <h3 class="text-2xl font-black text-gray-800 uppercase">{{ Auth::user()->name ?? 'Wali Murid' }}
+                    <h3 class="text-xl font-black text-gray-800 uppercase">{{ $user->name ?? 'Wali Murid' }}
                     </h3>
-                    <p class="text-xs font-bold text-[#10b981] uppercase tracking-widest mb-8">Orang Tua / Wali Siswa
+                    <p class="text-[10px] font-bold text-[#10b981] uppercase tracking-widest mb-8">Orang Tua / Wali
+                        Siswa
                     </p>
 
-                    <div class="w-full space-y-4">
-                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                            <i class="fas fa-envelope text-[#10b981] w-10 text-center text-xl"></i>
-                            <div class="ml-4">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Username /
-                                    Email</p>
+                    <div class="w-full space-y-3">
+                        <div class="flex items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-envelope text-[#10b981] w-8 text-center text-lg"></i>
+                            <div class="ml-3">
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Username /
+                                    Email
+                                </p>
                                 <p class="text-sm font-black text-gray-700">
                                     {{ $user->username ?? ($user->email ?? '-') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                            <i class="fas fa-venus-mars text-[#10b981] w-10 text-center text-xl"></i>
-                            <div class="ml-4">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gender</p>
+                        <div class="flex items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-venus-mars text-[#10b981] w-8 text-center text-lg"></i>
+                            <div class="ml-3">
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Gender</p>
                                 <p class="text-sm font-black text-gray-700">{{ $user->gender ?? '-' }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                            <i class="fas fa-phone-alt text-[#10b981] w-10 text-center text-xl"></i>
-                            <div class="ml-4">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No. Telepon /
-                                    WhatsApp</p>
+                        <div class="flex items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-phone-alt text-[#10b981] w-8 text-center text-lg"></i>
+                            <div class="ml-3">
+                                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">No. Telepon</p>
                                 <p class="text-sm font-black text-gray-700">{{ $user->phone ?? '-' }}</p>
                             </div>
                         </div>
                     </div>
 
                     <button type="button" onclick="toggleEditProfile(true)"
-                        class="mt-8 bg-[#10b981] text-white px-8 py-4 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition w-full">
+                        class="mt-6 bg-[#10b981] text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition w-full">
                         <i class="fas fa-user-edit mr-2"></i> Edit Profil
                     </button>
                 </div>
@@ -546,40 +675,40 @@
                 <form id="profileForm" class="hidden flex flex-col" action="{{ route('profile.update') }}"
                     method="POST" enctype="multipart/form-data">
                     @csrf
-                    <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
-                        <h3 class="text-lg font-black text-gray-700 uppercase tracking-widest">Edit Profil</h3>
+                    <div class="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+                        <h3 class="text-base font-black text-gray-700 uppercase tracking-widest">Edit Profil</h3>
                         <button type="button" onclick="toggleEditProfile(false)"
                             class="text-gray-400 hover:text-red-500 transition"><i
-                                class="fas fa-times text-xl"></i></button>
+                                class="fas fa-times text-lg"></i></button>
                     </div>
 
-                    <div class="space-y-5">
+                    <div class="space-y-4">
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Unggah
-                                Foto Profil Baru</label>
+                                class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Unggah
+                                Foto</label>
                             <input type="file" name="photo" accept="image/*"
-                                class="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50">
+                                class="w-full text-xs text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Nama
+                                class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Nama
                                 Lengkap</label>
                             <input type="text" name="name" value="{{ $user->name ?? '' }}" required
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Username
+                                class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Username
                                 / Email</label>
                             <input type="text" value="{{ $user->username ?? ($user->email ?? '') }}" disabled
-                                class="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-400 cursor-not-allowed">
+                                class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-400 cursor-not-allowed">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Gender</label>
+                                class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Gender</label>
                             <select name="gender"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                                 <option value="">Pilih Gender</option>
                                 <option value="Laki-laki"
                                     {{ ($user->gender ?? '') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
@@ -588,19 +717,19 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">No.
-                                Telepon / WhatsApp</label>
+                            <label
+                                class="block text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">No.
+                                Telepon</label>
                             <input type="tel" name="phone" value="{{ $user->phone ?? '' }}"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                         </div>
                     </div>
 
-                    <div class="flex gap-4 mt-8">
+                    <div class="flex gap-4 mt-6">
                         <button type="submit"
-                            class="flex-1 bg-[#10b981] text-white px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:bg-green-600 transition">Simpan
-                            Perubahan</button>
+                            class="flex-1 bg-[#10b981] text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:bg-green-600 transition">Simpan</button>
                         <button type="button" onclick="toggleEditProfile(false)"
-                            class="flex-1 bg-gray-100 text-gray-600 px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition">Batal</button>
+                            class="flex-1 bg-gray-100 text-gray-600 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition">Batal</button>
                     </div>
                 </form>
             </div>
@@ -608,9 +737,57 @@
 
     </main>
 
-    <!-- SCRIPT (Logika Toggle & Detail Riwayat) -->
+    <!-- ============================================== -->
+    <!-- MODAL TAMBAH ANAK LAIN -->
+    <!-- ============================================== -->
+    <div id="tambahAnakModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center">
+        <div class="bg-white rounded-[30px] w-full max-w-md overflow-hidden shadow-2xl p-8 relative">
+            <button onclick="closeTambahAnakModal()"
+                class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition"><i
+                    class="fas fa-times text-xl"></i></button>
+
+            <div class="text-center mb-6">
+                <div
+                    class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                    <i class="fas fa-link"></i>
+                </div>
+                <h3 class="font-black text-gray-800 text-xl">Kaitkan Anak Lain</h3>
+                <p class="text-xs text-gray-500 mt-2 px-4">Masukkan NISN anak Anda yang lain agar profilnya terhubung
+                    dengan akun ini.</p>
+            </div>
+
+            <!-- Form ini akan diarahkan ke controller untuk memproses penambahan anak -->
+            <form action="{{ route('ortu.tambah-anak') }}" method="POST">
+                @csrf
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">NISN Anak
+                        (10 Angka)</label>
+                    <div class="relative">
+                        <i class="fas fa-id-card absolute left-4 top-3.5 text-gray-400 text-sm"></i>
+                        <input type="text" name="nisn_tambahan" required maxlength="10"
+                            placeholder="Masukkan NISN Anak"
+                            class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition">
+                    </div>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-blue-500 text-white px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-blue-100 hover:bg-blue-600 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i> Hubungkan Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Logika Pindah View
+        // Logika Modal Tambah Anak
+        function openTambahAnakModal() {
+            document.getElementById('tambahAnakModal').classList.remove('hidden');
+        }
+
+        function closeTambahAnakModal() {
+            document.getElementById('tambahAnakModal').classList.add('hidden');
+        }
+
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
             document.getElementById('view-' + viewId).classList.add('active');
@@ -630,23 +807,24 @@
                 if (titleEl) titleEl.innerText = "Pengaturan Akun";
                 if (subtitleEl) subtitleEl.innerText = "Profil Pribadi Wali Murid";
                 if (breadcrumbEl) breadcrumbEl.innerText = "Profil Anda";
-                toggleEditProfile(false); // Pastikan mode view (bukan form) saat pertama dibuka
+                toggleEditProfile(false);
             } else if (viewId === 'detail-riwayat') {
                 if (titleEl) titleEl.innerText = "Riwayat Poin";
                 if (subtitleEl) subtitleEl.innerText = "Detail Rekaman Pelanggaran Ananda";
                 if (breadcrumbEl) breadcrumbEl.innerText = "Riwayat";
-                // Jalankan pengambilan data secara asynchronous setelah halaman berpindah
                 @if (isset($siswaAktif))
                     loadRiwayatPoin("{{ $siswaAktif->nisn }}");
                 @endif
+            } else if (viewId === 'profil-siswa') {
+                if (titleEl) titleEl.innerText = "Profil Siswa";
+                if (subtitleEl) subtitleEl.innerText = "Informasi Lengkap Pendidikan Ananda";
+                if (breadcrumbEl) breadcrumbEl.innerText = "Siswa";
             }
         }
 
-        // Logika Toggle View Profil vs Form Edit
         function toggleEditProfile(showForm) {
             const view = document.getElementById('profileView');
             const form = document.getElementById('profileForm');
-
             if (showForm) {
                 view.classList.add('hidden');
                 form.classList.remove('hidden');
@@ -656,47 +834,20 @@
             }
         }
 
-        // Fungsi bantuan untuk alert notifikasi profile
-        function showAlert(type, message) {
-            const alertBox = document.getElementById('liveAlert');
-            if (!alertBox) return; // Mencegah error jika div tidak ada
-
-            alertBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
-
-            if (type === 'success') {
-                alertBox.classList.add('bg-green-100', 'text-green-700');
-                alertBox.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ${message}`;
-            } else {
-                alertBox.classList.add('bg-red-100', 'text-red-700');
-                alertBox.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i> ${message}`;
-            }
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
-
-        // Fungsi AJAX untuk mengambil riwayat poin siswa yang sedang aktif
         async function loadRiwayatPoin(nisn) {
             const tbody = document.getElementById('tabel-riwayat-body');
-
             try {
-                // Pastikan route 'riwayat.api' sudah Anda buat di web.php (Route::get('/riwayat/api/{nisn}', ...))
                 const response = await fetch(`/admin/riwayat/api/${nisn}`);
                 const res = await response.json();
-
-                // Pastikan data yang diambil sesuai format dari Controller Anda
                 const data = res.data ? res.data : res;
 
-                tbody.innerHTML = ''; // Bersihkan loading
-
+                tbody.innerHTML = '';
                 if (!data || data.length === 0) {
                     tbody.innerHTML =
                         '<tr><td colspan="4" class="py-8 text-center text-gray-400 font-bold text-sm">Tidak ada riwayat pelanggaran untuk anak ini. Alhamdulillah!</td></tr>';
                     return;
                 }
 
-                // Looping dan buat elemen baris tabel
                 data.forEach(item => {
                     const dateObj = new Date(item.waktu);
                     const formattedDate = dateObj.toLocaleDateString('id-ID', {
@@ -725,32 +876,24 @@
                     `;
                     tbody.appendChild(tr);
                 });
-
             } catch (error) {
-                console.error("Gagal mengambil data riwayat:", error);
                 tbody.innerHTML =
-                    '<tr><td colspan="4" class="py-8 text-center text-red-500 font-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Gagal memuat data. Periksa koneksi atau URL API Anda.</td></tr>';
+                    '<tr><td colspan="4" class="py-8 text-center text-red-500 font-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Gagal memuat data. Periksa koneksi.</td></tr>';
             }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Animasi Loading Bar Melingkar (Circle Progress)
             const circle = document.querySelector('.circle-progress');
-            if (circle) {
-                setTimeout(() => {
-                    circle.style.strokeDashoffset = "{{ $dashoffset ?? 477 }}";
-                }, 100);
-            }
+            if (circle) setTimeout(() => {
+                circle.style.strokeDashoffset = "{{ $dashoffset ?? 477 }}";
+            }, 100);
 
-            // LOGIKA DROPDOWN PROFIL
             const profileBtn = document.getElementById('profileDropdownBtn');
             const profileMenu = document.getElementById('profileDropdownMenu');
-
             if (profileBtn && profileMenu) {
-                profileBtn.addEventListener('click', function(e) {
+                profileBtn.addEventListener('click', e => {
                     e.stopPropagation();
                     const isHidden = profileMenu.classList.contains('hidden');
-
                     if (isHidden) {
                         profileMenu.classList.remove('hidden');
                         setTimeout(() => {
@@ -765,8 +908,7 @@
                         }, 200);
                     }
                 });
-
-                document.addEventListener('click', function(e) {
+                document.addEventListener('click', e => {
                     if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
                         profileMenu.classList.remove('opacity-100', 'scale-100');
                         profileMenu.classList.add('opacity-0', 'scale-95');
@@ -777,36 +919,26 @@
                 });
             }
 
-            // ==========================================
-            // LOGIKA SUBMIT FORM PROFIL VIA AJAX
-            // ==========================================
             const profileForm = document.getElementById('profileForm');
             if (profileForm) {
                 profileForm.addEventListener('submit', async function(e) {
-                    e.preventDefault(); // Mencegah form memuat ulang halaman secara paksa
-
+                    e.preventDefault();
                     const submitBtn = this.querySelector('button[type="submit"]');
                     const originalText = submitBtn.innerText;
-
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
                     submitBtn.disabled = true;
 
                     try {
-                        const formData = new FormData(this);
-
                         const response = await fetch(this.action, {
                             method: 'POST',
-                            body: formData,
+                            body: new FormData(this),
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest'
                             }
                         });
-
                         const result = await response.json();
-
                         if (response.ok && result.success) {
                             alert(result.message || 'Profil berhasil diperbarui!');
-                            // Refresh halaman agar foto dan nama terbaru di navbar/session ikut berubah
                             window.location.reload();
                         } else {
                             alert(result.message || 'Terjadi kesalahan saat menyimpan profil.');
@@ -814,7 +946,6 @@
                             submitBtn.disabled = false;
                         }
                     } catch (error) {
-                        console.error('Error:', error);
                         alert('Gagal terhubung ke server.');
                         submitBtn.innerHTML = originalText;
                         submitBtn.disabled = false;

@@ -156,7 +156,7 @@
 
         <!-- FOOTER -->
         <footer class="text-center py-6 text-[10px] md:text-xs text-gray-400 font-medium">
-            © 2026 MTsN 2 Kota Banjarmasin. Developed by Anis Ayu Lestari.
+            © 2026 MTsN 2 Kota Banjarmasin. Developed by Politeknik Negeri Banjarmasin.
         </footer>
 
     </div>

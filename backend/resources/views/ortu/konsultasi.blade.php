@@ -54,13 +54,6 @@
                 <i class="fas fa-comments mr-4 text-lg"></i> <span class="font-bold tracking-wide">Konsultasi BK</span>
             </a>
         </nav>
-
-        <div class="mt-auto pt-20 pb-10">
-            <form action="{{ route('logout') }}" method="POST" id="logout-form" class="hidden">
-                @csrf
-            </form>
-        </div>
-
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -84,7 +77,10 @@
                     <div class="text-right">
                         <p class="text-xs font-black text-[#10b981] uppercase leading-none">
                             {{ Auth::user()->name ?? 'Wali Murid' }}</p>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Status: Orang Tua</p>
+                        <!-- DISAMAKAN DENGAN DASHBOARD: Menampilkan jumlah anak -->
+                        <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">
+                            Wali Dari {{ count($daftarAnak ?? []) }} Anak
+                        </p>
                     </div>
                     <!-- PERBAIKAN: Memastikan foto yang dikirim dari database (jika ada) menggunakan asset() jika berupa path lokal -->
                     <img src="{{ isset(Auth::user()->photo) && Auth::user()->photo ? (filter_var(Auth::user()->photo, FILTER_VALIDATE_URL) ? Auth::user()->photo : asset('storage/' . Auth::user()->photo)) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->name ?? 'Wali Murid') . '&background=10b981&color=fff' }}"
@@ -102,7 +98,17 @@
                             class="w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
                             <i class="fas fa-user"></i> Profil Anda
                         </button>
+
+                        <!-- DISAMAKAN DENGAN DASHBOARD: Tambahan menu Profil Siswa -->
+                        @if (isset($daftarAnak) && count($daftarAnak) > 0)
+                            <a href="{{ route('ortu.dashboard') }}"
+                                class="block w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition flex items-center gap-3">
+                                <i class="fas fa-user-graduate"></i> Profil Siswa
+                            </a>
+                        @endif
+
                         <div class="border-t border-gray-100 my-1"></div>
+                        <form action="{{ route('logout') }}" method="POST" id="logout-form" class="hidden">@csrf</form>
                         <a href="#"
                             onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
                             class="block w-full text-left px-6 py-3 text-xs font-bold text-red-600 hover:bg-red-50 transition flex items-center gap-3">
@@ -147,18 +153,28 @@
 
                     <form action="{{ route('ortu.konsultasi.kirim') }}" method="POST" class="space-y-5">
                         @csrf
+
+                        <!-- TAMBAHAN: Pilih Tahun Ajaran -->
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Pilih
-                                Anak</label>
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tahun
+                                Ajaran</label>
                             <div class="relative">
-                                <i class="fas fa-user-graduate absolute left-4 top-3.5 text-gray-400 text-xs"></i>
-                                <select name="siswa_id" required
+                                <i class="fas fa-calendar-alt absolute left-4 top-3.5 text-gray-400 text-xs"></i>
+                                <select name="academic_period" required
                                     class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none">
-                                    @foreach ($daftarAnak ?? [] as $anak)
-                                        <option value="{{ $anak->id }}">{{ $anak->nama }} (Kelas
-                                            {{ $anak->kelas }})</option>
-                                    @endforeach
+                                    @php
+                                        // Secara dinamis membuat tahun ajaran berjalan
+                                        $currentYear = \Carbon\Carbon::now()->year;
+                                    @endphp
+                                    <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Genap">
+                                        {{ $currentYear }}/{{ $currentYear + 1 }} Genap</option>
+                                    <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Ganjil">
+                                        {{ $currentYear }}/{{ $currentYear + 1 }} Ganjil</option>
+                                    <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Genap">
+                                        {{ $currentYear - 1 }}/{{ $currentYear }} Genap</option>
+                                    <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Ganjil">
+                                        {{ $currentYear - 1 }}/{{ $currentYear }} Ganjil</option>
                                 </select>
                                 <i
                                     class="fas fa-chevron-down absolute right-4 top-4 text-gray-400 text-xs pointer-events-none"></i>
@@ -167,7 +183,44 @@
 
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Topik /
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Pilih
+                                Anak</label>
+                            <div class="relative">
+                                <i class="fas fa-user-graduate absolute left-4 top-3.5 text-gray-400 text-xs"></i>
+                                <select name="siswa_id" id="pilihSiswa" onchange="updateGuruBK()" required
+                                    class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none">
+                                    @foreach ($daftarAnak ?? [] as $anak)
+                                        <option value="{{ $anak->id }}" data-bk-id="{{ $anak->guru_bk_id ?? '' }}"
+                                            data-bk-nama="{{ $anak->guru_bk_nama ?? 'Guru BK Kelas ' . ($anak->kelas ?? 'Terkait') }}">
+                                            {{ $anak->nama }} (Kelas {{ $anak->kelas }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <i
+                                    class="fas fa-chevron-down absolute right-4 top-4 text-gray-400 text-xs pointer-events-none"></i>
+                            </div>
+                        </div>
+
+                        <!-- BAGIAN BARU: Guru BK Tujuan (Otomatis & Readonly) -->
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Ditujukan
+                                Ke (Guru BK)</label>
+                            <div class="relative">
+                                <i
+                                    class="fas fa-chalkboard-teacher absolute left-4 top-3.5 text-[#10b981] text-sm"></i>
+                                <input type="text" id="namaGuruBK" readonly placeholder="Otomatis terisi..."
+                                    class="w-full pl-10 pr-4 py-3 bg-green-50 border border-green-100 rounded-xl text-sm font-bold text-green-700 outline-none cursor-not-allowed">
+                            </div>
+                            <input type="hidden" name="bk_id" id="hiddenBkId">
+                            <p class="text-[9px] text-gray-400 mt-1 italic">*Guru BK menyesuaikan kelas anak secara
+                                otomatis.</p>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Topik
+                                /
                                 Subjek</label>
                             <input type="text" name="topik" required
                                 placeholder="Contoh: Klarifikasi Poin Pelanggaran"
@@ -191,68 +244,173 @@
 
                 <!-- TABEL RIWAYAT KONSULTASI -->
                 <div class="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-50">
-                    <h3
-                        class="font-black text-gray-700 text-sm uppercase tracking-widest mb-8 border-b pb-4 flex items-center">
-                        <div class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-history"></i>
-                        </div>
-                        Riwayat Konsultasi Anda
-                    </h3>
+                    <div class="flex justify-between items-center mb-8 border-b pb-4">
+                        <h3 class="font-black text-gray-700 text-sm uppercase tracking-widest flex items-center">
+                            <div
+                                class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-history"></i>
+                            </div>
+                            Riwayat Konsultasi Anda
+                        </h3>
+
+                        <!-- TAMBAHAN: Filter Tahun Akademik untuk melihat history lama -->
+                        <form action="{{ route('ortu.konsultasi') }}" method="GET"
+                            class="flex items-center gap-2">
+                            <select name="tahun_akademik" onchange="this.form.submit()"
+                                class="bg-gray-50 border border-gray-100 text-xs font-bold text-gray-600 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-green-100 cursor-pointer">
+                                <option value="">Semua Tahun Ajaran</option>
+                                @php $cy = \Carbon\Carbon::now()->year; @endphp
+                                <option value="{{ $cy }}/{{ $cy + 1 }} Genap"
+                                    {{ request('tahun_akademik') == "$cy/" . ($cy + 1) . ' Genap' ? 'selected' : '' }}>
+                                    {{ $cy }}/{{ $cy + 1 }} Genap</option>
+                                <option value="{{ $cy }}/{{ $cy + 1 }} Ganjil"
+                                    {{ request('tahun_akademik') == "$cy/" . ($cy + 1) . ' Ganjil' ? 'selected' : '' }}>
+                                    {{ $cy }}/{{ $cy + 1 }} Ganjil</option>
+                                <option value="{{ $cy - 1 }}/{{ $cy }} Genap"
+                                    {{ request('tahun_akademik') == $cy - 1 . "/{$cy} Genap" ? 'selected' : '' }}>
+                                    {{ $cy - 1 }}/{{ $cy }} Genap</option>
+                                <option value="{{ $cy - 1 }}/{{ $cy }} Ganjil"
+                                    {{ request('tahun_akademik') == $cy - 1 . "/{$cy} Ganjil" ? 'selected' : '' }}>
+                                    {{ $cy - 1 }}/{{ $cy }} Ganjil</option>
+                            </select>
+                        </form>
+                    </div>
 
                     <div class="space-y-6">
                         @forelse($riwayatKonsultasi ?? [] as $riwayat)
                             <div
-                                class="p-6 border border-gray-100 rounded-[24px] transition-all hover:shadow-md {{ $riwayat->status == 'dibalas' ? 'bg-green-50/20' : 'bg-gray-50/50' }}">
+                                class="p-6 border border-gray-100 rounded-[24px] transition-all hover:shadow-md {{ $riwayat->status == 'dibalas' || $riwayat->status == 'selesai' ? 'bg-green-50/20' : 'bg-gray-50/50' }}">
 
-                                <!-- Header Riwayat -->
-                                <div
-                                    class="flex flex-wrap gap-3 justify-between items-start mb-4 border-b border-gray-100 pb-4">
-                                    <div class="flex items-center gap-3">
+                                <!-- LOGIKA JIKA PENGIRIM = BK (Panggilan Sekolah) -->
+                                @if (($riwayat->pengirim ?? 'ortu') == 'bk')
+                                    <div
+                                        class="flex flex-wrap gap-3 justify-between items-start mb-4 border-b border-gray-100 pb-4">
+                                        <div class="flex items-center gap-3">
+                                            @if (($riwayat->status ?? 'menunggu') == 'menunggu')
+                                                <span
+                                                    class="text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm bg-orange-100 text-orange-600">
+                                                    Perlu Konfirmasi
+                                                </span>
+                                            @else
+                                                <span
+                                                    class="text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm bg-green-100 text-green-700">
+                                                    Sudah Dikonfirmasi
+                                                </span>
+                                            @endif
+                                            <span class="text-xs text-gray-400 font-bold">
+                                                <i class="far fa-clock mr-1"></i>
+                                                {{ $riwayat->created_at->format('d M Y, H:i') }}
+                                            </span>
+                                        </div>
                                         <span
-                                            class="text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm
-                                            {{ $riwayat->status == 'menunggu' ? 'bg-orange-100 text-orange-600' : ($riwayat->status == 'dibalas' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600') }}">
-                                            {{ ucfirst($riwayat->status) }}
-                                        </span>
-                                        <span class="text-xs text-gray-400 font-bold">
-                                            <i class="far fa-clock mr-1"></i>
-                                            {{ $riwayat->created_at->format('d M Y, H:i') }}
+                                            class="text-xs font-bold text-gray-600 bg-white px-4 py-1.5 rounded-xl border border-blue-200 shadow-sm flex items-center gap-2">
+                                            <i class="fas fa-bullhorn text-blue-500"></i> Panggilan Sekolah
                                         </span>
                                     </div>
-                                    <span
-                                        class="text-xs font-bold text-gray-600 bg-white px-4 py-1.5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2">
-                                        <i class="fas fa-child text-[#10b981]"></i>
-                                        {{ $riwayat->student->nama ?? 'Siswa' }}
-                                    </span>
-                                </div>
 
-                                <!-- Body Pesan Orang Tua -->
-                                <div class="mb-5">
-                                    <h4 class="font-black text-gray-800 text-sm mb-2 uppercase tracking-tight">
-                                        {{ $riwayat->topic }}</h4>
-                                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative">
+                                    <!-- Pesan Panggilan dari BK -->
+                                    <div class="mb-5">
+                                        <h4 class="font-black text-gray-800 text-sm mb-2 uppercase tracking-tight">
+                                            {{ $riwayat->topic }}</h4>
+                                        <p class="text-[10px] text-gray-500 font-bold mb-3"><i
+                                                class="fas fa-user-tie mr-1"></i> Dari:
+                                            {{ $riwayat->bk->name ?? 'Guru BK' }} (Untuk
+                                            {{ $riwayat->student->nama ?? 'Ananda' }})</p>
                                         <div
-                                            class="absolute w-3 h-3 bg-white border-t border-l border-gray-100 transform -rotate-45 -top-1.5 left-6">
-                                        </div>
-                                        <p class="text-xs text-gray-600 leading-relaxed font-medium relative z-10">
-                                            {{ $riwayat->message }}</p>
-                                    </div>
-                                </div>
-
-                                <!-- Balasan Guru BK/Admin -->
-                                @if ($riwayat->reply)
-                                    <div class="pl-6 border-l-2 border-[#10b981] relative mt-2">
-                                        <div
-                                            class="absolute -left-2 top-0 w-3.5 h-3.5 bg-[#10b981] rounded-full border-2 border-white">
-                                        </div>
-                                        <p
-                                            class="text-[10px] font-black text-[#10b981] uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <i class="fas fa-reply"></i> Balasan Sekolah
-                                        </p>
-                                        <div class="bg-green-50/50 p-4 rounded-2xl border border-green-100/50">
-                                            <p class="text-xs text-gray-700 font-medium leading-relaxed">
-                                                {{ $riwayat->reply }}</p>
+                                            class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm relative">
+                                            <div
+                                                class="absolute w-3 h-3 bg-blue-50/50 border-t border-l border-blue-100 transform -rotate-45 -top-1.5 left-6">
+                                            </div>
+                                            <p class="text-xs text-gray-700 leading-relaxed font-medium relative z-10">
+                                                {{ $riwayat->message }}</p>
                                         </div>
                                     </div>
+
+                                    <!-- Area Balasan Wali Murid -->
+                                    @if (($riwayat->status ?? 'menunggu') == 'menunggu')
+                                        <form action="{{ route('ortu.konsultasi.balas', $riwayat->id) }}"
+                                            method="POST" class="mt-4">
+                                            @csrf
+                                            <label
+                                                class="block text-[10px] font-bold text-[#10b981] uppercase tracking-widest mb-2">Konfirmasi
+                                                Kehadiran / Balasan Anda:</label>
+                                            <textarea name="balasan" rows="3" required
+                                                placeholder="Ketik kesediaan hadir atau balasan untuk pihak sekolah di sini..."
+                                                class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-100 transition mb-3"></textarea>
+                                            <button type="submit"
+                                                class="bg-[#10b981] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-green-600 transition shadow-md shadow-green-100">
+                                                <i class="fas fa-paper-plane mr-2"></i> Kirim Konfirmasi
+                                            </button>
+                                        </form>
+                                    @else
+                                        <div class="pl-6 border-l-2 border-[#10b981] relative mt-2">
+                                            <div
+                                                class="absolute -left-2 top-0 w-3.5 h-3.5 bg-[#10b981] rounded-full border-2 border-white">
+                                            </div>
+                                            <p
+                                                class="text-[10px] font-black text-[#10b981] uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <i class="fas fa-reply"></i> Balasan Anda
+                                            </p>
+                                            <div class="bg-green-50/50 p-4 rounded-2xl border border-green-100/50">
+                                                <p class="text-xs text-gray-700 font-medium leading-relaxed">
+                                                    {{ $riwayat->reply ?? '-' }}</p>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    <!-- LOGIKA JIKA PENGIRIM = ORTU (Sistem Lama) -->
+                                @else
+                                    <div
+                                        class="flex flex-wrap gap-3 justify-between items-start mb-4 border-b border-gray-100 pb-4">
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="text-[9px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest shadow-sm
+                                                {{ $riwayat->status == 'menunggu' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-700' }}">
+                                                {{ ucfirst($riwayat->status) }}
+                                            </span>
+                                            <span class="text-xs text-gray-400 font-bold">
+                                                <i class="far fa-clock mr-1"></i>
+                                                {{ $riwayat->created_at->format('d M Y, H:i') }}
+                                            </span>
+                                        </div>
+                                        <span
+                                            class="text-xs font-bold text-gray-600 bg-white px-4 py-1.5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2">
+                                            <i class="fas fa-child text-[#10b981]"></i>
+                                            {{ $riwayat->student->nama ?? 'Siswa' }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Body Pesan Orang Tua -->
+                                    <div class="mb-5">
+                                        <h4 class="font-black text-gray-800 text-sm mb-2 uppercase tracking-tight">
+                                            {{ $riwayat->topic }}</h4>
+                                        <div
+                                            class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative">
+                                            <div
+                                                class="absolute w-3 h-3 bg-white border-t border-l border-gray-100 transform -rotate-45 -top-1.5 left-6">
+                                            </div>
+                                            <p class="text-xs text-gray-600 leading-relaxed font-medium relative z-10">
+                                                {{ $riwayat->message }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Balasan Guru BK/Admin -->
+                                    @if ($riwayat->reply)
+                                        <div class="pl-6 border-l-2 border-[#10b981] relative mt-2">
+                                            <div
+                                                class="absolute -left-2 top-0 w-3.5 h-3.5 bg-[#10b981] rounded-full border-2 border-white">
+                                            </div>
+                                            <p
+                                                class="text-[10px] font-black text-[#10b981] uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <i class="fas fa-reply"></i> Balasan Sekolah
+                                                ({{ $riwayat->bk->name ?? 'Admin' }})
+                                            </p>
+                                            <div class="bg-green-50/50 p-4 rounded-2xl border border-green-100/50">
+                                                <p class="text-xs text-gray-700 font-medium leading-relaxed">
+                                                    {{ $riwayat->reply }}</p>
+                                            </div>
+                                        </div>
+                                    @endif
                                 @endif
 
                             </div>
@@ -267,7 +425,8 @@
                                 <h4 class="text-base font-black text-gray-700 mb-1 tracking-tight">Belum ada konsultasi
                                 </h4>
                                 <p class="text-xs text-gray-500 font-medium max-w-xs mx-auto">Gunakan formulir di
-                                    samping untuk memulai percakapan atau menanyakan perkembangan anak Anda.</p>
+                                    samping untuk memulai percakapan atau menanyakan perkembangan anak Anda pada periode
+                                    ini.</p>
                             </div>
                         @endforelse
                     </div>
@@ -402,6 +561,27 @@
 
     <!-- SCRIPT (Logika Toggle & Detail Riwayat) -->
     <script>
+        // LOGIKA UPDATE GURU BK OTOMATIS
+        function updateGuruBK() {
+            const select = document.getElementById('pilihSiswa');
+            if (select && select.options.length > 0) {
+                const selectedOption = select.options[select.selectedIndex];
+                const bkNama = selectedOption.getAttribute('data-bk-nama');
+                const bkId = selectedOption.getAttribute('data-bk-id');
+
+                const namaGuruEl = document.getElementById('namaGuruBK');
+                const idGuruEl = document.getElementById('hiddenBkId');
+
+                if (namaGuruEl) namaGuruEl.value = bkNama;
+                if (idGuruEl) idGuruEl.value = bkId;
+            }
+        }
+
+        // Panggil fungsi saat halaman pertama kali dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            updateGuruBK();
+        });
+
         // Logika Pindah View
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));

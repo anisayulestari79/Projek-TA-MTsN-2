@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers; // DISESUAIKAN: Menggunakan namespace utama Controllers
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -33,7 +33,7 @@ class OrtuAuthController extends Controller
         ]);
 
         $loginField = filter_var($request->username, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
-        
+
         $credentials = [
             $loginField => $request->username,
             'password' => $request->password,
@@ -41,7 +41,7 @@ class OrtuAuthController extends Controller
 
         if (Auth::attempt($credentials, $request->remember)) {
             $user = Auth::user();
-            
+
             if ($user->role === 'ortu') {
                 $request->session()->regenerate();
                 return redirect()->intended(route('ortu.dashboard'))

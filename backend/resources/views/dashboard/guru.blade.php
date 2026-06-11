@@ -1,1087 +1,1263 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Sistem Pelanggaran Poin Siswa</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Sistem Pelanggaran Poin Siswa - Guru</title>
+    <!-- Tailwind CSS (Kunci Desain) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
-        @include('dashboard.styles')
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .sidebar-item.active {
+            background-color: white;
+            color: #10b981;
+            border-radius: 10px 0 0 10px;
+            font-weight: 800;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        .autocomplete-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .autocomplete-dropdown::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+
+        .autocomplete-dropdown::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
     </style>
 </head>
-<body>
-    <div class="app">
-        @include('dashboard.sidebar', ['role' => 'guru'])
-        <main>
-            @include('dashboard.header', ['user' => $user ?? session('user', [])])
-            @include('dashboard.views.guru', ['user' => $user ?? session('user', [])])
-        </main>
+
+<body class="bg-[#f4f7f6] font-sans flex text-gray-800 h-screen overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="w-72 h-full bg-[#10b981] text-white flex flex-col shadow-xl z-50 flex-shrink-0">
+        <div class="p-8">
+            <div class="flex items-center gap-3 mb-2">
+                <img src="https://i.ibb.co.com/Psm2GxFN/5ef6453c-3a7b-47dc-a402-dacf0adb575d-removebg-preview-1.png"
+                    class="w-10 drop-shadow-md" alt="Logo Kemenag">
+                <h1 class="font-bold text-xl leading-tight tracking-tight uppercase">Panel <br> Guru & BK</h1>
+            </div>
+            <p class="text-[10px] opacity-80 font-medium tracking-widest uppercase ml-1">MTsN 2 Kota Banjarmasin</p>
+        </div>
+
+        <nav class="mt-4 flex-grow pl-6 overflow-y-auto pr-2">
+            <a href="#" onclick="showView('dashboard')" id="nav-dashboard"
+                class="sidebar-item nav-btn active flex items-center px-6 py-4 transition" data-view="dashboard">
+                <i class="fas fa-th-large mr-4 text-sm"></i> <span>Dashboard</span>
+            </a>
+            <a href="#" onclick="showView('poin')" id="nav-poin"
+                class="sidebar-item nav-btn flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl"
+                data-view="poin">
+                <i class="fas fa-edit mr-4 text-sm"></i> <span class="font-medium">Input Poin Siswa</span>
+            </a>
+            <a href="#" onclick="showView('data-siswa')" id="nav-data-siswa"
+                class="sidebar-item nav-btn flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl"
+                data-view="data-siswa">
+                <i class="fas fa-users mr-4 text-sm"></i> <span class="font-medium">Data Siswa</span>
+            </a>
+
+            <!-- HANYA MUNCUL JIKA ROLE ADALAH GURU BK -->
+            @if (isset($user['role']) && $user['role'] === 'bk')
+                <a href="#" onclick="showView('konsultasi')" id="nav-konsultasi"
+                    class="sidebar-item nav-btn flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl"
+                    data-view="konsultasi">
+                    <i class="fas fa-comments mr-4 text-sm"></i> <span class="font-medium">Konsultasi Ortu</span>
+                </a>
+            @endif
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-10 overflow-y-auto h-full relative">
+        <!-- GLOBAL HEADER -->
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <nav class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
+                    Home / <span id="breadcrumb-active">Dashboard</span>
+                </nav>
+                <h2 id="view-title" class="text-2xl font-black text-gray-700 uppercase tracking-tighter italic">
+                    Selamat Datang, Guru!
+                </h2>
+                <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Sistem Input Kedisiplinan Siswa</p>
+            </div>
+
+            <!-- User Profile & Dropdown -->
+            <div class="relative">
+                <button id="profileDropdownBtn"
+                    class="flex items-center gap-4 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition focus:outline-none">
+                    <div class="text-right">
+                        <p class="text-xs font-black text-[#10b981] uppercase leading-none">
+                            {{ $user['name'] ?? 'Bapak/Ibu Guru' }}</p>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">NIP:
+                            {{ $user['nip'] ?? '-' }}</p>
+                    </div>
+
+                    @php
+                        $avatarUrl =
+                            'https://ui-avatars.com/api/?name=' .
+                            urlencode($user['name'] ?? 'Guru') .
+                            '&background=10b981&color=fff';
+                        $photoPath =
+                            isset($user['photo']) && $user['photo']
+                                ? (str_starts_with($user['photo'], 'http')
+                                    ? $user['photo']
+                                    : asset('storage/' . $user['photo']))
+                                : $avatarUrl;
+                    @endphp
+                    <img src="{{ $photoPath }}" onerror="this.src='{{ $avatarUrl }}'"
+                        class="w-10 h-10 rounded-full border-2 border-green-50 object-cover shadow-sm" alt="Profile">
+                    <i class="fas fa-chevron-down text-gray-400 text-xs ml-1"></i>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div id="profileDropdownMenu"
+                    class="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95 profile-dropdown">
+                    <div class="py-2 profile-dropdown-content">
+                        <a href="{{ route('profile.index') }}"
+                            class="block w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
+                            <i class="fas fa-user-edit"></i> Edit Profil
+                        </a>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <form action="{{ route('logout') }}" method="POST" class="w-full">
+                            @csrf
+                            <button type="submit"
+                                class="w-full text-left px-6 py-3 text-xs font-bold text-red-600 hover:bg-red-50 transition flex items-center gap-3">
+                                <i class="fas fa-sign-out-alt"></i> Keluar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ALERTS MUNCUL DI SINI JIKA ADA REDIRECT SUCCESS -->
+        @if (session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-2xl relative mb-8 shadow-sm"
+                id="globalAlert">
+                <span class="block sm:inline font-bold"><i
+                        class="fas fa-check-circle mr-2"></i>{{ session('success') }}</span>
+                <button onclick="document.getElementById('globalAlert').style.display='none'"
+                    class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        @endif
+
+        <div id="liveAlert" class="hidden px-4 py-3 rounded-2xl relative mb-6 shadow-sm font-bold"></div>
+
+        <!-- ============================================== -->
+        <!-- VIEW: DASHBOARD -->
+        <!-- ============================================== -->
+        <div id="view-dashboard" class="view-section active">
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <div class="bg-white p-6 rounded-[30px] shadow-sm border border-gray-100 flex items-center gap-6 relative overflow-hidden group hover:border-green-200 transition-all cursor-pointer"
+                    onclick="showView('poin')">
+                    <div
+                        class="absolute -right-6 -bottom-6 text-green-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
+                        <i class="fas fa-edit text-9xl"></i>
+                    </div>
+                    <div
+                        class="w-16 h-16 bg-green-100 text-[#10b981] rounded-2xl flex items-center justify-center text-2xl z-10 shadow-inner">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="z-10">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Input Hari Ini
+                        </p>
+                        <h3 class="text-3xl font-black text-gray-800">{{ $inputHariIni ?? 0 }} <span
+                                class="text-sm font-bold text-gray-400">Poin</span></h3>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-[30px] shadow-sm border border-gray-100 flex items-center gap-6 relative overflow-hidden group hover:border-blue-200 transition-all cursor-pointer"
+                    onclick="showView('data-siswa')">
+                    <div
+                        class="absolute -right-6 -bottom-6 text-blue-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
+                        <i class="fas fa-users text-9xl"></i>
+                    </div>
+                    <div
+                        class="w-16 h-16 bg-blue-100 text-blue-500 rounded-2xl flex items-center justify-center text-2xl z-10 shadow-inner">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="z-10">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Siswa
+                            Terdaftar</p>
+                        <h3 class="text-3xl font-black text-gray-800">{{ number_format($totalSiswa ?? 0) }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Aksi Cepat & Keseluruhan -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div
+                        class="bg-gradient-to-br from-[#10b981] to-teal-600 p-8 rounded-[30px] shadow-lg text-white relative overflow-hidden">
+                        <div
+                            class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10 blur-xl">
+                        </div>
+                        <h3 class="font-black text-xl mb-2 relative z-10"><i
+                                class="fas fa-bolt text-yellow-300 mr-2"></i> Aksi Cepat</h3>
+                        <p class="text-xs font-medium opacity-90 mb-6 relative z-10">Pilih menu di bawah ini untuk
+                            mencatat poin atau melihat data.</p>
+
+                        <div class="space-y-3 relative z-10">
+                            <button type="button" onclick="showView('poin')"
+                                class="block w-full bg-white text-[#10b981] text-center font-bold text-xs uppercase tracking-wider py-4 rounded-xl shadow-md hover:bg-gray-50 transition transform hover:-translate-y-1">
+                                <i class="fas fa-plus-circle mr-2"></i> Input Poin Baru
+                            </button>
+                            <button type="button" onclick="showView('data-siswa')"
+                                class="block w-full bg-teal-800/40 text-white border border-teal-500/50 text-center font-bold text-xs uppercase tracking-wider py-4 rounded-xl hover:bg-teal-800/60 transition">
+                                <i class="fas fa-search mr-2"></i> Cari Data Siswa
+                            </button>
+                            @if (isset($user['role']) && $user['role'] === 'bk')
+                                <button type="button" onclick="showView('konsultasi')"
+                                    class="block w-full bg-teal-800/40 text-white border border-teal-500/50 text-center font-bold text-xs uppercase tracking-wider py-4 rounded-xl hover:bg-teal-800/60 transition mt-3">
+                                    <i class="fas fa-comments mr-2"></i> Cek Konsultasi
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-100 h-full">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-black text-gray-700 uppercase tracking-widest">Daftar Poin Siswa</h3>
+                            <button type="button" onclick="showView('data-siswa')"
+                                class="text-[10px] font-bold text-[#10b981] uppercase hover:underline">Lihat
+                                Lengkap</button>
+                        </div>
+
+                        <div class="flex gap-4 mb-4">
+                            <div class="flex-1 relative">
+                                <i class="fas fa-search absolute left-4 top-3.5 text-gray-300 text-xs"></i>
+                                <input type="text" id="filter-nama" placeholder="Cari Nama/NISN di sini..."
+                                    class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-100 outline-none transition"
+                                    oninput="filterDashboard()">
+                            </div>
+                            <div class="w-1/3">
+                                <select id="filter-kelas-dashboard"
+                                    class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer"
+                                    onchange="filterDashboard()">
+                                    <option value="">Semua Kelas</option>
+                                    @foreach ($daftarKelas ?? [] as $kelas)
+                                        <option value="{{ $kelas }}">{{ $kelas }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="sticky top-0 bg-white shadow-sm z-10">
+                                    <tr
+                                        class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
+                                        <th class="p-4 rounded-tl-lg">NISN</th>
+                                        <th class="p-4">Nama Siswa</th>
+                                        <th class="p-4 text-center">Kelas</th>
+                                        <th class="p-4 text-center rounded-tr-lg">Poin Kedisiplinan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100" id="tbl-poin-keseluruhan">
+                                    @forelse($dataSiswa ?? [] as $siswa)
+                                        <tr class="hover:bg-gray-50 transition row-dashboard-siswa"
+                                            data-kelas="{{ $siswa->kelas }}">
+                                            <td class="p-4 font-medium text-gray-500 nisn-col">{{ $siswa->nisn }}
+                                            </td>
+                                            <td class="p-4 font-bold text-gray-800 nama-col">{{ $siswa->nama }}</td>
+                                            <td class="p-4 text-center text-[#10b981] font-bold">{{ $siswa->kelas }}
+                                            </td>
+                                            <td class="p-4 text-center">
+                                                @if (($siswa->poin ?? 0) >= 100)
+                                                    <span
+                                                        class="bg-red-100 text-red-700 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                                @elseif(($siswa->poin ?? 0) >= 50)
+                                                    <span
+                                                        class="bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                                @elseif(($siswa->poin ?? 0) >= 25)
+                                                    <span
+                                                        class="bg-yellow-100 text-yellow-700 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                                @else
+                                                    <span
+                                                        class="bg-green-50 text-green-600 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="p-8 text-center text-gray-400 font-bold">Tidak
+                                                ada data siswa.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW: INPUT POIN -->
+        <!-- ============================================== -->
+        <div id="view-poin" class="view-section">
+            <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50 mb-8 relative z-30">
+                <div class="mb-8 border-b pb-6">
+                    <h3 class="font-black text-gray-700 text-lg uppercase tracking-widest flex items-center gap-3">
+                        <div class="w-8 h-8 bg-green-50 text-[#10b981] rounded-xl flex items-center justify-center">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        Tambah Poin Pelanggaran Siswa
+                    </h3>
+                </div>
+
+                <form id="poinForm" class="space-y-6" onsubmit="submitPoinForm(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="relative md:col-span-2">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Cari Nama / NISN
+                                Siswa *</label>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-4 top-3.5 text-gray-300 text-xs"></i>
+                                <input type="text" id="p_nama"
+                                    placeholder="Ketik nama atau NISN siswa dari database..." autocomplete="off"
+                                    class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-green-100 outline-none transition"
+                                    required>
+                            </div>
+                            <!-- Autocomplete Dropdown Siswa -->
+                            <div id="nama-list"
+                                class="autocomplete-dropdown absolute w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto hidden">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Kelas</label>
+                            <input type="text" id="p_kelas_display" readonly placeholder="Terisi otomatis"
+                                class="w-full px-4 py-3 bg-gray-100 border border-gray-100 rounded-2xl text-sm text-gray-500 font-bold cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+                        <div class="md:col-span-3 relative z-40">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Cari & Pilih
+                                Pelanggaran *</label>
+                            <div class="relative">
+                                <i
+                                    class="fas fa-exclamation-circle absolute left-4 top-3.5 text-orange-400 text-xs"></i>
+                                <input type="text" id="p_search_pelanggaran"
+                                    placeholder="Ketik jenis pelanggaran..." autocomplete="off"
+                                    class="w-full pl-10 pr-4 py-3 bg-orange-50 border border-orange-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-200 outline-none transition"
+                                    required>
+                            </div>
+                            <!-- Autocomplete Dropdown Pelanggaran -->
+                            <div id="pelanggaran-list"
+                                class="autocomplete-dropdown absolute w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto hidden">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Skor Poin</label>
+                            <div class="relative">
+                                <i class="fas fa-hashtag absolute left-4 top-3.5 text-blue-400 text-xs"></i>
+                                <input type="number" id="p_jumlah_display" readonly placeholder="Otomatis"
+                                    class="w-full pl-10 pr-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm text-blue-700 font-black cursor-not-allowed">
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="p_nisn" name="nisn" required>
+                    <input type="hidden" id="p_keterangan_pelanggaran" name="ket" required>
+                    <input type="hidden" id="p_jumlah_poin" name="jumlah" required>
+
+                    <div class="flex gap-4 pt-4 border-t border-gray-50 mt-6">
+                        <button type="submit"
+                            class="bg-[#10b981] text-white px-8 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition flex items-center justify-center gap-2 flex-1 md:flex-none">
+                            <i class="fas fa-save"></i> Simpan Poin
+                        </button>
+                        <button type="button" onclick="resetForm()"
+                            class="bg-gray-100 text-gray-600 px-8 py-3.5 rounded-2xl text-xs font-bold uppercase hover:bg-gray-200 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-undo"></i> Reset Form
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabel Riwayat Terbaru di bawah Form -->
+            <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50 relative z-10">
+                <div class="flex justify-between items-center mb-8 border-b pb-6">
+                    <h3 class="font-black text-gray-700 text-lg uppercase tracking-widest flex items-center gap-3">
+                        <div class="w-8 h-8 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        Riwayat Penambahan Poin Terbaru
+                    </h3>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                                <th class="py-4 pl-6 rounded-tl-xl w-48">Waktu Masuk</th>
+                                <th class="py-4">NISN / Nama Siswa</th>
+                                <th class="py-4 text-center">Kelas</th>
+                                <th class="py-4">Keterangan Pelanggaran</th>
+                                <th class="py-4 text-center rounded-tr-xl">Poin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="riwayatTableBody" class="text-xs divide-y divide-gray-100">
+                            <!-- Diisi via Fetch AJAX JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW: DATA SISWA -->
+        <!-- ============================================== -->
+        <div id="view-data-siswa" class="view-section">
+            <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50">
+                <div class="flex justify-between items-center mb-8 border-b pb-6">
+                    <div>
+                        <h3 class="font-black text-gray-700 text-lg uppercase tracking-widest">Data Master Siswa</h3>
+                        <p class="text-xs text-gray-400 mt-1">Lihat profil dan pantau akumulasi poin kedisiplinan
+                            siswa.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mb-6">
+                    <div class="flex-1 relative">
+                        <i class="fas fa-search absolute left-4 top-3.5 text-gray-300 text-xs"></i>
+                        <input type="text" id="search-siswa" placeholder="Cari Nama/NISN..."
+                            class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-100 outline-none transition"
+                            oninput="filterSiswa()">
+                    </div>
+                    <div class="w-64">
+                        <select id="filter-kelas-siswa"
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer"
+                            onchange="filterSiswa()">
+                            <option value="">Semua Kelas</option>
+                            @foreach ($daftarKelas ?? [] as $kelas)
+                                <option value="{{ $kelas }}">{{ $kelas }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
+                            <tr>
+                                <th class="py-4 pl-6 rounded-tl-xl">NISN</th>
+                                <th class="py-4">Nama Lengkap</th>
+                                <th class="py-4 text-center">Kelas</th>
+                                <th class="py-4 text-center">Kontak Ortu</th>
+                                <th class="py-4 text-center">Poin</th>
+                                <th class="py-4 text-center rounded-tr-xl">Profil</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @forelse($dataSiswa ?? [] as $siswa)
+                                <tr class="hover:bg-gray-50 transition row-data-siswa"
+                                    data-kelas="{{ $siswa->kelas }}">
+                                    <td class="py-5 pl-6 font-medium text-gray-500 row-nisn">{{ $siswa->nisn }}</td>
+                                    <td class="py-5 font-bold text-gray-800 row-nama">{{ $siswa->nama }}</td>
+                                    <td class="py-5 text-center text-[#10b981] font-bold">{{ $siswa->kelas ?? '-' }}
+                                    </td>
+                                    <td class="py-5 text-center text-gray-500">{{ $siswa->kontak_ortu ?? '-' }}</td>
+                                    <td class="py-5 text-center">
+                                        @if (($siswa->poin ?? 0) >= 100)
+                                            <span
+                                                class="bg-red-100 text-red-700 px-3 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @elseif(($siswa->poin ?? 0) >= 50)
+                                            <span
+                                                class="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @elseif(($siswa->poin ?? 0) >= 25)
+                                            <span
+                                                class="bg-yellow-100 text-yellow-700 px-3 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @else
+                                            <span
+                                                class="bg-green-50 text-green-600 px-3 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-5 text-center">
+                                        <button
+                                            class="text-[#10b981] hover:text-white hover:bg-[#10b981] transition px-4 py-1.5 bg-green-50 rounded-lg text-xs font-bold"
+                                            onclick="viewSiswaModal('{{ $siswa->nisn }}')"
+                                            title="Lihat Detail Profil">
+                                            <i class="fas fa-eye mr-1"></i> Detail
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="py-10 text-center text-gray-400 font-bold">Belum ada
+                                        data siswa di database.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW: KONSULTASI BK (Khusus Guru BK)           -->
+        <!-- ============================================== -->
+        @if (isset($user['role']) && $user['role'] === 'bk')
+            <div id="view-konsultasi" class="view-section">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+                    <!-- FORM KIRIM PESAN -->
+                    <div
+                        class="lg:col-span-1 bg-white p-8 rounded-[30px] shadow-sm border border-gray-50 h-fit sticky top-10">
+                        <h3
+                            class="font-black text-gray-700 text-sm uppercase tracking-widest mb-6 border-b pb-4 flex items-center">
+                            <div
+                                class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            Kirim Pesan ke Ortu
+                        </h3>
+
+                        <form action="{{ route('guru.konsultasi.kirim') }}" method="POST" class="space-y-5">
+                            @csrf
+
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Tahun
+                                    Ajaran</label>
+                                <div class="relative">
+                                    <i class="fas fa-calendar-alt absolute left-4 top-3.5 text-gray-400 text-xs"></i>
+                                    <select name="academic_period" required
+                                        class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition appearance-none">
+                                        @php $currentYear = \Carbon\Carbon::now()->year; @endphp
+                                        <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Genap">
+                                            {{ $currentYear }}/{{ $currentYear + 1 }} Genap</option>
+                                        <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Ganjil">
+                                            {{ $currentYear }}/{{ $currentYear + 1 }} Ganjil</option>
+                                        <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Genap">
+                                            {{ $currentYear - 1 }}/{{ $currentYear }} Genap</option>
+                                        <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Ganjil">
+                                            {{ $currentYear - 1 }}/{{ $currentYear }} Ganjil</option>
+                                    </select>
+                                    <i
+                                        class="fas fa-chevron-down absolute right-4 top-4 text-gray-400 text-xs pointer-events-none"></i>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Pilih
+                                    Siswa (Binaan)</label>
+                                <div class="relative">
+                                    <i class="fas fa-user-graduate absolute left-4 top-3.5 text-gray-400 text-xs"></i>
+                                    <select name="siswa_id" required
+                                        class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition appearance-none">
+                                        <option value=""> Pilih Siswa </option>
+                                        @foreach ($siswaBinaan ?? [] as $sb)
+                                            <option value="{{ $sb->id }}">{{ $sb->nama }} (Kelas
+                                                {{ $sb->kelas }})</option>
+                                        @endforeach
+                                    </select>
+                                    <i
+                                        class="fas fa-chevron-down absolute right-4 top-4 text-gray-400 text-xs pointer-events-none"></i>
+                                </div>
+                                <p class="text-[9px] text-gray-400 mt-1 italic">*Hanya menampilkan siswa dari kelas
+                                    binaan Anda.</p>
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Topik
+                                    Pesan</label>
+                                <input type="text" name="topik" required
+                                    placeholder="Contoh: Panggilan Wali Murid"
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-100 transition">
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Isi
+                                    Pesan / Keterangan</label>
+                                <textarea name="pesan" rows="4" required
+                                    placeholder="Tuliskan tujuan pemanggilan atau pesan Anda secara detail..."
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-100 transition resize-none"></textarea>
+                            </div>
+
+                            <button type="submit"
+                                class="w-full bg-blue-500 text-white px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-blue-100 hover:bg-blue-600 hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+                                Kirim Pesan <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- RIWAYAT KONSULTASI -->
+                    <div class="lg:col-span-2 bg-white p-8 rounded-[40px] shadow-sm border border-gray-50">
+                        <div class="flex justify-between items-center mb-8 border-b pb-4">
+                            <div>
+                                <h3
+                                    class="font-black text-gray-700 text-lg uppercase tracking-widest flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-history"></i>
+                                    </div>
+                                    Riwayat Pesan & Konsultasi
+                                </h3>
+                                <p class="text-xs text-gray-400 mt-2">Daftar riwayat percakapan Anda dengan Orang Tua
+                                    siswa binaan.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            @forelse($konsultasi ?? [] as $kon)
+                                <div
+                                    class="border border-gray-100 rounded-[24px] p-6 transition-all hover:shadow-md {{ ($kon->status ?? 'menunggu') == 'menunggu' ? 'bg-orange-50/30' : 'bg-gray-50/50' }}">
+
+                                    <!-- LOGIKA TAMPILAN JIKA PENGIRIM ADALAH BK -->
+                                    @if (($kon->pengirim ?? 'ortu') == 'bk')
+                                        <div
+                                            class="flex flex-wrap gap-3 justify-between items-start mb-4 border-b border-gray-100 pb-4">
+                                            <div class="flex items-center gap-3">
+                                                <span
+                                                    class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                                    Pesan Keluar
+                                                </span>
+                                                <span class="text-xs text-gray-400 font-bold">
+                                                    <i class="far fa-clock mr-1"></i>
+                                                    {{ \Carbon\Carbon::parse($kon->created_at)->format('d M Y, H:i') }}
+                                                </span>
+                                            </div>
+                                            <span
+                                                class="text-xs font-bold text-gray-600 bg-white px-4 py-1.5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2">
+                                                <i class="fas fa-child text-blue-500"></i>
+                                                {{ $kon->student->nama ?? 'Siswa' }}
+                                            </span>
+                                        </div>
+
+                                        <div class="mb-5">
+                                            <h4 class="font-bold text-gray-800 text-sm uppercase mb-1">
+                                                {{ $kon->topic }}</h4>
+                                            <p
+                                                class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2">
+                                                Ditujukan Ke: Ortu {{ $kon->student->nama ?? 'Siswa' }}</p>
+
+                                            <div
+                                                class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm relative">
+                                                <div
+                                                    class="absolute w-3 h-3 bg-blue-50/50 border-t border-l border-blue-100 transform -rotate-45 -top-1.5 left-6">
+                                                </div>
+                                                <p
+                                                    class="text-xs text-gray-700 leading-relaxed font-medium relative z-10">
+                                                    "{{ $kon->message }}"</p>
+                                            </div>
+                                        </div>
+
+                                        @if ($kon->reply)
+                                            <div class="pl-6 border-l-2 border-[#10b981] relative mt-2">
+                                                <div
+                                                    class="absolute -left-2 top-0 w-3.5 h-3.5 bg-[#10b981] rounded-full border-2 border-white">
+                                                </div>
+                                                <p
+                                                    class="text-[10px] font-black text-[#10b981] uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <i class="fas fa-reply"></i> Balasan Orang Tua
+                                                </p>
+                                                <div class="bg-green-50/50 p-4 rounded-2xl border border-green-100/50">
+                                                    <p class="text-xs text-gray-700 font-medium leading-relaxed">
+                                                        {{ $kon->reply }}</p>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <p class="text-[10px] text-gray-400 font-bold italic mt-2"><i
+                                                    class="fas fa-clock mr-1"></i> Menunggu balasan dari Orang Tua
+                                                siswa...</p>
+                                        @endif
+
+                                        <!-- LOGIKA TAMPILAN JIKA PENGIRIM ADALAH ORTU -->
+                                    @else
+                                        <div
+                                            class="flex flex-wrap gap-3 justify-between items-start mb-4 border-b border-gray-100 pb-4">
+                                            <div class="flex items-center gap-3">
+                                                @if (($kon->status ?? 'menunggu') == 'menunggu')
+                                                    <span
+                                                        class="bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">Perlu
+                                                        Dibalas</span>
+                                                @else
+                                                    <span
+                                                        class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">Sudah
+                                                        Dibalas</span>
+                                                @endif
+                                                <span class="text-xs text-gray-400 font-bold">
+                                                    <i class="far fa-clock mr-1"></i>
+                                                    {{ \Carbon\Carbon::parse($kon->created_at)->format('d M Y, H:i') }}
+                                                </span>
+                                            </div>
+                                            <span
+                                                class="text-xs font-bold text-gray-600 bg-white px-4 py-1.5 rounded-xl border border-gray-200 shadow-sm flex items-center gap-2">
+                                                <i class="fas fa-child text-[#10b981]"></i>
+                                                {{ $kon->student->nama ?? 'Siswa' }}
+                                            </span>
+                                        </div>
+
+                                        <div class="mb-5">
+                                            <h4 class="font-bold text-gray-800 text-sm uppercase mb-1">
+                                                {{ $kon->topic ?? 'Tanpa Topik' }}</h4>
+                                            <p
+                                                class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                                                Dari: {{ $kon->parent->name ?? 'Orang Tua' }}</p>
+
+                                            <div
+                                                class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative">
+                                                <div
+                                                    class="absolute w-3 h-3 bg-white border-t border-l border-gray-100 transform -rotate-45 -top-1.5 left-6">
+                                                </div>
+                                                <p
+                                                    class="text-xs text-gray-600 leading-relaxed font-medium relative z-10">
+                                                    "{{ $kon->message ?? '-' }}"</p>
+                                            </div>
+                                        </div>
+
+                                        @if (($kon->status ?? 'menunggu') == 'menunggu')
+                                            <!-- Form Balasan BK -->
+                                            <form action="{{ route('guru.konsultasi.balas', $kon->id) }}"
+                                                method="POST" class="mt-4">
+                                                @csrf
+                                                <label
+                                                    class="block text-[10px] font-bold text-[#10b981] uppercase tracking-widest mb-2">Tulis
+                                                    Balasan Anda:</label>
+                                                <textarea name="balasan" rows="3" required placeholder="Ketik balasan untuk orang tua di sini..."
+                                                    class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-100 transition mb-3"></textarea>
+                                                <button type="submit"
+                                                    class="bg-[#10b981] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-green-600 transition shadow-md shadow-green-100">
+                                                    <i class="fas fa-paper-plane mr-2"></i> Kirim Balasan
+                                                </button>
+                                            </form>
+                                        @else
+                                            <div class="pl-6 border-l-2 border-[#10b981] relative mt-2">
+                                                <div
+                                                    class="absolute -left-2 top-0 w-3.5 h-3.5 bg-[#10b981] rounded-full border-2 border-white">
+                                                </div>
+                                                <p
+                                                    class="text-[10px] font-black text-[#10b981] uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <i class="fas fa-reply"></i> Balasan Anda
+                                                </p>
+                                                <div class="bg-green-50/50 p-4 rounded-2xl border border-green-100/50">
+                                                    <p class="text-xs text-gray-700 font-medium leading-relaxed">
+                                                        {{ $kon->reply ?? '-' }}</p>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @endif
+                                </div>
+                            @empty
+                                <div
+                                    class="text-center py-10 border-2 border-dashed border-gray-200 rounded-[30px] bg-gray-50/50">
+                                    <div
+                                        class="w-20 h-20 bg-white shadow-sm border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-comment-slash text-3xl text-gray-300"></i>
+                                    </div>
+                                    <h4 class="text-base font-black text-gray-700 mb-1 tracking-tight">Belum ada
+                                        riwayat pesan.</h4>
+                                    <p class="text-xs text-gray-500 font-medium max-w-xs mx-auto">Gunakan form di
+                                        samping untuk mengirim panggilan/pesan baru ke orang tua siswa binaan.</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+    </main>
+
+    <!-- ============================================== -->
+    <!-- MODAL PROFIL SISWA (LOKAL TANPA FETCH)         -->
+    <!-- ============================================== -->
+    <div id="siswaProfileModal"
+        class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm transition-opacity opacity-0 duration-200">
+        <div class="bg-white rounded-[30px] p-8 max-w-lg w-full mx-4 shadow-2xl transform scale-95 transition-transform duration-200"
+            id="siswaProfileContent">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="text-xl font-black text-gray-800 uppercase tracking-wider">Detail Profil Siswa</h3>
+                <button onclick="closeSiswaProfileModal()" class="text-gray-400 hover:text-red-500 transition"><i
+                        class="fas fa-times text-2xl"></i></button>
+            </div>
+
+            <div class="flex flex-col items-center mb-8">
+                <div id="siswaProfilePic"
+                    class="w-24 h-24 bg-green-100 rounded-full mb-3 flex items-center justify-center text-[#10b981] text-3xl font-bold border-4 border-green-50 shadow-sm overflow-hidden">
+                </div>
+                <h4 id="siswaProfileNama" class="text-lg font-black text-gray-800 uppercase text-center">-</h4>
+                <span id="siswaProfileNisn"
+                    class="text-xs font-bold text-gray-500 mt-1 bg-gray-100 px-3 py-1 rounded-full">-</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Kelas</p>
+                    <p id="siswaProfileKelas" class="font-bold text-gray-700">-</p>
+                </div>
+                <div class="bg-red-50 p-4 rounded-2xl border border-red-100 text-center">
+                    <p class="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Total Poin</p>
+                    <p id="siswaProfilePoin" class="font-black text-red-600 text-xl">0</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Jenis Kelamin</p>
+                    <p id="siswaProfileJk" class="font-bold text-gray-700">-</p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-center">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Kontak Ortu</p>
+                    <p id="siswaProfileKontak" class="font-bold text-gray-700">-</p>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-center">
+                <button onclick="closeSiswaProfileModal()"
+                    class="w-full py-3.5 bg-[#10b981] text-white shadow-lg shadow-green-100 font-bold text-xs uppercase tracking-wider rounded-xl hover:scale-105 transition">Tutup
+                    Detail</button>
+            </div>
+        </div>
     </div>
-    @include('dashboard.modals.guru')
+
+    <!-- KONFIGURASI JAVASCRIPT GLOBAL -->
     <script>
-        const API_BASE_URL = '{{ url('/api') }}';
-        const AUTH_TOKEN = '{{ session('auth_token') }}';
-        const USER = @json(session('user'));
         const CSRF_TOKEN = '{{ csrf_token() }}';
+        const allSiswaData = @json($dataSiswa ?? []);
+        const allPelanggaranData = @json($dataPelanggaran ?? []);
     </script>
+
+    <!-- SCRIPT JAVASCRIPT -->
     <script>
-        // Basic navigation
-        function toggleSidebarView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            const view = document.getElementById('view-' + viewId);
-            if (view) view.classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            const activeBtn = document.querySelector(`[data-view="${viewId}"]`);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-                const titleText = activeBtn.textContent.trim().split(' ').slice(1).join(' ');
-                document.getElementById('page-title').textContent = titleText;
+        // ==========================================
+        // LOGIKA NAVIGASI VIEW TUNGGAL
+        // ==========================================
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+
+            const titleEl = document.getElementById('view-title');
+            const breadcrumbEl = document.getElementById('breadcrumb-active');
+
+            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+
+            if (viewId === 'dashboard') {
+                titleEl.innerText = "Selamat Datang, Guru!";
+                breadcrumbEl.innerText = "Dashboard";
+                document.getElementById('nav-dashboard').classList.add('active');
+            } else if (viewId === 'poin') {
+                titleEl.innerText = "Input Poin Pelanggaran";
+                breadcrumbEl.innerText = "Input Poin";
+                document.getElementById('nav-poin').classList.add('active');
+                setTimeout(() => document.getElementById('p_nama')?.focus(), 100);
+            } else if (viewId === 'data-siswa') {
+                titleEl.innerText = "Data Master Siswa";
+                breadcrumbEl.innerText = "Data Siswa";
+                document.getElementById('nav-data-siswa').classList.add('active');
+            } else if (viewId === 'konsultasi') {
+                titleEl.innerText = "Konsultasi Wali Murid";
+                breadcrumbEl.innerText = "Konsultasi";
+                document.getElementById('nav-konsultasi')?.classList.add('active');
             }
         }
-        
-        // Function to convert file to base64
-        function readURL(input) {
-            return new Promise((resolve) => {
-                if (input.files && input.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        resolve(e.target.result);
-                    };
-                    reader.readAsDataURL(input.files[0]);
-                } else {
-                    resolve(null);
-                }
-            });
-        }
 
-        // Function to show info modal
-        function showInfoModal(title, message) {
-            const modal = document.getElementById('infoModal');
-            if (modal) {
-                document.getElementById('infoModalTitle').textContent = title;
-                document.getElementById('infoModalMessage').textContent = message;
-                modal.style.display = 'flex';
+        // ==========================================
+        // ALERTS & RESET FORM
+        // ==========================================
+        function showAlert(type, message) {
+            const alertBox = document.getElementById('liveAlert');
+            if (!alertBox) {
+                alert(message);
+                return;
+            }
+
+            alertBox.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+
+            if (type === 'success') {
+                alertBox.classList.add('bg-green-100', 'text-green-700');
+                alertBox.innerHTML =
+                    `<span class="block sm:inline"><i class="fas fa-check-circle mr-2"></i> ${message}</span>
+                                      <button onclick="document.getElementById('liveAlert').classList.add('hidden')" class="absolute top-0 bottom-0 right-0 px-4 py-3"><i class="fas fa-times"></i></button>`;
             } else {
-                alert(title + ': ' + message);
+                alertBox.classList.add('bg-red-100', 'text-red-700');
+                alertBox.innerHTML =
+                    `<span class="block sm:inline"><i class="fas fa-exclamation-triangle mr-2"></i> ${message}</span>
+                                      <button onclick="document.getElementById('liveAlert').classList.add('hidden')" class="absolute top-0 bottom-0 right-0 px-4 py-3"><i class="fas fa-times"></i></button>`;
             }
+            const poinView = document.getElementById('view-poin');
+            if (poinView) poinView.scrollIntoView({
+                behavior: 'smooth'
+            });
         }
 
-        // Function to close info modal
-        function closeInfoModal() {
-            const modal = document.getElementById('infoModal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
+        function resetForm() {
+            const form = document.getElementById('poinForm');
+            if (form) form.reset();
+            document.getElementById('p_nisn').value = '';
+            document.getElementById('p_keterangan_pelanggaran').value = '';
+            document.getElementById('p_jumlah_poin').value = '';
+            document.getElementById('p_kelas_display').value = '';
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (btn.dataset.view) {
-                        toggleSidebarView(btn.dataset.view);
-                    }
-                });
-            });
-            
-            const profileDropdown = document.querySelector('.profile-dropdown');
-            const profileButton = document.getElementById('profileButton');
-            if (profileButton) {
-                profileButton.addEventListener('click', function(event) {
-                    event.stopPropagation();
-                    profileDropdown.classList.toggle('active');
-                });
-            }
-            document.addEventListener('click', function(e) {
-                if (profileDropdown && !profileDropdown.contains(e.target)) {
-                    profileDropdown.classList.remove('active');
-                }
-            });
-
-            // Edit Profile functionality
-            const profileView = document.getElementById('profileView');
-            const profileForm = document.getElementById('profileForm');
-            const btnEdit = document.getElementById('btnEditProfile');
-            const btnCancel = document.getElementById('btnCancelEdit');
-
-            if (btnEdit && profileView && profileForm) {
-                btnEdit.addEventListener('click', () => {
-                    profileView.style.display = 'none';
-                    profileForm.style.display = 'block';
-                    window.scrollTo({top: 0, behavior: 'smooth'});
-                });
-            }
-
-            if (btnCancel && profileView && profileForm) {
-                btnCancel.addEventListener('click', () => {
-                    profileForm.style.display = 'none';
-                    profileView.style.display = 'block';
-                });
-            }
-
-            // Handle profile form submit
-            if (profileForm) {
-                profileForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const editPhoto = document.getElementById('editPhoto');
-                    const editNama = document.getElementById('editNama');
-                    const editGender = document.getElementById('editGender');
-                    const editPhone = document.getElementById('editPhone');
-                    
-                    if (!editNama) {
-                        showInfoModal('Error', 'Nama wajib diisi');
-                        return;
-                    }
-
-                    try {
-                        // Create FormData for file upload
-                        const formData = new FormData();
-                        formData.append('name', editNama.value.trim());
-                        formData.append('gender', editGender.value || '');
-                        formData.append('phone', editPhone.value.trim() || '');
-                        
-                        if (editPhoto && editPhoto.files && editPhoto.files[0]) {
-                            formData.append('photo', editPhoto.files[0]);
-                        }
-
-                        // Send to web route (not API directly)
-                        const response = await fetch('{{ route("profile.update") }}', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': CSRF_TOKEN,
-                                'Accept': 'application/json',
-                            },
-                            body: formData
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            showInfoModal('Berhasil', 'Profil berhasil diperbarui!');
-                            
-                            // Update foto profil di card jika ada
-                            if (data.data && data.data.photo) {
-                                const mainProfilePic = document.getElementById('mainProfilePic');
-                                if (mainProfilePic) {
-                                    mainProfilePic.src = data.data.photo;
-                                }
-                                const profilePhoto = document.getElementById('profilePhoto');
-                                if (profilePhoto) {
-                                    profilePhoto.src = data.data.photo;
-                                }
-                            }
-                            
-                            // Update nama di card
-                            if (data.data && data.data.name) {
-                                const profileNama = document.getElementById('profileNama');
-                                if (profileNama) {
-                                    profileNama.textContent = data.data.name;
-                                }
-                                const profileName = document.getElementById('profileName');
-                                if (profileName) {
-                                    profileName.textContent = data.data.name;
-                                }
-                            }
-                            
-                            // Update detail profil
-                            if (data.data) {
-                                const profileGender = document.getElementById('profileGender');
-                                if (profileGender && data.data.gender) {
-                                    profileGender.textContent = data.data.gender;
-                                }
-                                const profilePhone = document.getElementById('profilePhone');
-                                if (profilePhone && data.data.phone) {
-                                    profilePhone.textContent = data.data.phone;
-                                }
-                            }
-                            
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1500);
-                        } else {
-                            const errorMsg = data.message || data.error || 'Gagal memperbarui profil';
-                            showInfoModal('Error', errorMsg);
-                        }
-                    } catch (error) {
-                        console.error('Error updating profile:', error);
-                        showInfoModal('Error', 'Terjadi kesalahan: ' + error.message);
-                    }
-                });
-            }
-
-            // Close info modal button
-            const closeInfoModalBtn = document.getElementById('closeInfoModalButton');
-            if (closeInfoModalBtn) {
-                closeInfoModalBtn.addEventListener('click', closeInfoModal);
-            }
-
-            // Handle "Edit Profil" button in dropdown
-            const editProfileDropdownBtn = document.querySelector('.profile-dropdown-content button[data-view="profile"]');
-            if (editProfileDropdownBtn) {
-                editProfileDropdownBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const profileDropdown = document.querySelector('.profile-dropdown');
-                    if (profileDropdown) {
-                        profileDropdown.classList.remove('active');
-                    }
-                    toggleSidebarView('profile');
-                });
-            }
-
-            // Load data when view changes
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (btn.dataset.view === 'data-siswa') {
-                        loadSiswa();
-                    } else if (btn.dataset.view === 'poin') {
-                        loadPoinData();
-                    } else if (btn.dataset.view === 'dashboard') {
-                        loadDashboardData();
-                    }
-                });
-            });
-
-            // Initial load
-            loadSiswa();
-            loadPoinData();
-            loadDashboardData();
-        });
-
-        // ========== DASHBOARD ==========
-        let dashboardSiswaData = [];
-
-        async function loadDashboardData() {
-            try {
-                const response = await fetch(API_BASE_URL + '/siswa', {
-                    headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    dashboardSiswaData = data.data || [];
-                    populateDashboardFilters(dashboardSiswaData);
-                    // Apply filter if search term exists, otherwise show all
-                    filterData();
-                    setupPoinSort();
-                } else {
-                    console.error('Error loading dashboard data:', data.message);
-                }
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            }
-        }
-
-        function renderDashboardPoin(siswaList) {
-            const tbody = document.querySelector('#tbl-poin-keseluruhan tbody');
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            siswaList.forEach(siswa => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${siswa.nisn}</td>
-                    <td>${siswa.nama}</td>
-                    <td>${siswa.kelas}</td>
-                    <td>${siswa.poin || 0}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-            
-            // Setup sort after render
-            setTimeout(() => setupPoinSort(), 100);
-        }
-
-        function populateDashboardFilters(siswaList) {
-            const filterTingkat = document.getElementById('filter-tingkat-dashboard');
-            const filterKelas = document.getElementById('filter-kelas-dashboard');
-            
-            if (!filterTingkat || !filterKelas) return;
-
-            // Populate tingkat
-            const tingkatSet = new Set();
-            siswaList.forEach(s => {
-                if (s.kelas) {
-                    const tingkat = s.kelas.split('.')[0];
-                    if (tingkat) tingkatSet.add(tingkat);
-                }
-            });
-            
-            filterTingkat.innerHTML = '<option value="">Semua Tingkat</option>';
-            Array.from(tingkatSet).sort().forEach(tingkat => {
-                const option = document.createElement('option');
-                option.value = tingkat;
-                option.textContent = tingkat;
-                filterTingkat.appendChild(option);
-            });
-
-            // Initial populate kelas (all classes)
-            updateDashboardKelasFilter(siswaList);
-
-            // Add event listener for tingkat change
-            filterTingkat.onchange = function() {
-                updateDashboardKelasFilter(siswaList);
-                filterData(); // Auto filter when tingkat changes
-            };
-        }
-
-        function updateDashboardKelasFilter(siswaList) {
-            const filterTingkat = document.getElementById('filter-tingkat-dashboard');
-            const filterKelas = document.getElementById('filter-kelas-dashboard');
-            const selectedTingkat = filterTingkat?.value || '';
-            const currentKelasValue = filterKelas?.value || '';
-            
-            if (!filterKelas) return;
-
-            // Populate kelas based on selected tingkat
-            const kelasSet = new Set();
-            siswaList.forEach(s => {
-                if (s.kelas) {
-                    if (selectedTingkat) {
-                        // Only show classes from selected tingkat
-                        if (s.kelas.startsWith(selectedTingkat + '.')) {
-                            kelasSet.add(s.kelas);
-                        }
-                    } else {
-                        // Show all classes if no tingkat selected
-                        kelasSet.add(s.kelas);
-                    }
-                }
-            });
-            
-            filterKelas.innerHTML = '<option value="">Semua Kelas</option>';
-            Array.from(kelasSet).sort().forEach(kelas => {
-                const option = document.createElement('option');
-                option.value = kelas;
-                option.textContent = kelas;
-                filterKelas.appendChild(option);
-            });
-            
-            // Reset kelas selection if current value is not in the new list
-            if (currentKelasValue && !Array.from(kelasSet).includes(currentKelasValue)) {
-                filterKelas.value = '';
-            } else if (currentKelasValue && Array.from(kelasSet).includes(currentKelasValue)) {
-                filterKelas.value = currentKelasValue;
-            }
-        }
-
-        window.filterData = function() {
+        // ==========================================
+        // FITUR PENCARIAN & FILTER REAL-TIME 
+        // ==========================================
+        window.filterDashboard = function() {
             const searchName = document.getElementById('filter-nama')?.value.toLowerCase().trim() || '';
-            const filterTingkat = document.getElementById('filter-tingkat-dashboard')?.value || '';
             const filterKelas = document.getElementById('filter-kelas-dashboard')?.value || '';
-            
-            let filtered = dashboardSiswaData.filter(siswa => {
-                const nameMatch = !searchName || siswa.nama.toLowerCase().includes(searchName);
-                const tingkatMatch = !filterTingkat || (siswa.kelas && siswa.kelas.startsWith(filterTingkat + '.'));
-                const kelasMatch = !filterKelas || siswa.kelas === filterKelas;
-                return nameMatch && tingkatMatch && kelasMatch;
+            const rows = document.querySelectorAll('.row-dashboard-siswa');
+            rows.forEach(row => {
+                const nama = row.querySelector('.nama-col').innerText.toLowerCase();
+                const nisn = row.querySelector('.nisn-col').innerText.toLowerCase();
+                const rowKelas = row.getAttribute('data-kelas');
+                const matchName = nama.includes(searchName) || nisn.includes(searchName);
+                const matchKelas = filterKelas === '' || rowKelas === filterKelas;
+                if (matchName && matchKelas) row.style.display = '';
+                else row.style.display = 'none';
             });
-            
-            renderDashboardPoin(filtered);
         };
-
-        // Sort functionality for poin column
-        let poinSortDirection = 'asc';
-        function setupPoinSort() {
-            const sortableHeader = document.querySelector('.sortable-header[data-sort-by="poin"]');
-            if (sortableHeader && !sortableHeader.dataset.sortSetup) {
-                sortableHeader.dataset.sortSetup = 'true';
-                sortableHeader.style.cursor = 'pointer';
-                sortableHeader.addEventListener('click', function() {
-                    const sorted = [...dashboardSiswaData].sort((a, b) => {
-                        const poinA = a.poin || 0;
-                        const poinB = b.poin || 0;
-                        return poinSortDirection === 'asc' ? poinA - poinB : poinB - poinA;
-                    });
-                    poinSortDirection = poinSortDirection === 'asc' ? 'desc' : 'asc';
-                    renderDashboardPoin(sorted);
-                    // Reset setup flag to allow re-setup
-                    sortableHeader.dataset.sortSetup = 'false';
-                    setTimeout(() => setupPoinSort(), 100);
-                });
-            }
-        }
-
-        // ========== SISWA CRUD (Guru can view only) ==========
-        async function loadSiswa() {
-            try {
-                const response = await fetch(API_BASE_URL + '/siswa', {
-                    headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    allSiswaDataForFilter = data.data || []; // Store all data for filtering
-                    populateFilterOptions(allSiswaDataForFilter);
-                    // Apply filter if search term exists, otherwise show all
-                    filterSiswa();
-                    // Update dashboard data too
-                    dashboardSiswaData = data.data || [];
-                    renderDashboardPoin(dashboardSiswaData);
-                } else {
-                    console.error('Error loading siswa:', data.message);
-                }
-            } catch (error) {
-                console.error('Error loading siswa:', error);
-            }
-        }
-
-        let allSiswaDataForFilter = []; // Store all siswa data for filter
-
-        function populateFilterOptions(siswaList) {
-            allSiswaDataForFilter = siswaList; // Store for later use
-            const filterTingkat = document.getElementById('filter-tingkat');
-            const filterKelas = document.getElementById('filter-kelas-siswa');
-            
-            if (!filterTingkat || !filterKelas) return;
-
-            // Populate tingkat
-            const tingkatSet = new Set();
-            siswaList.forEach(s => {
-                if (s.kelas) {
-                    const tingkat = s.kelas.split('.')[0];
-                    if (tingkat) tingkatSet.add(tingkat);
-                }
-            });
-            
-            filterTingkat.innerHTML = '<option value="">Semua Tingkat</option>';
-            Array.from(tingkatSet).sort().forEach(tingkat => {
-                const option = document.createElement('option');
-                option.value = tingkat;
-                option.textContent = tingkat;
-                filterTingkat.appendChild(option);
-            });
-
-            // Initial populate kelas (all classes)
-            updateKelasFilter();
-
-            // Add event listener for tingkat change
-            filterTingkat.onchange = function() {
-                updateKelasFilter();
-                filterSiswa(); // Auto filter when tingkat changes
-            };
-        }
-
-        function updateKelasFilter() {
-            const filterTingkat = document.getElementById('filter-tingkat');
-            const filterKelas = document.getElementById('filter-kelas-siswa');
-            const selectedTingkat = filterTingkat?.value || '';
-            const currentKelasValue = filterKelas?.value || '';
-            
-            if (!filterKelas) return;
-
-            // Populate kelas based on selected tingkat
-            const kelasSet = new Set();
-            allSiswaDataForFilter.forEach(s => {
-                if (s.kelas) {
-                    if (selectedTingkat) {
-                        // Only show classes from selected tingkat
-                        if (s.kelas.startsWith(selectedTingkat + '.')) {
-                            kelasSet.add(s.kelas);
-                        }
-                    } else {
-                        // Show all classes if no tingkat selected
-                        kelasSet.add(s.kelas);
-                    }
-                }
-            });
-            
-            filterKelas.innerHTML = '<option value="">Semua Kelas</option>';
-            Array.from(kelasSet).sort().forEach(kelas => {
-                const option = document.createElement('option');
-                option.value = kelas;
-                option.textContent = kelas;
-                filterKelas.appendChild(option);
-            });
-            
-            // Reset kelas selection if current value is not in the new list
-            if (currentKelasValue && !Array.from(kelasSet).includes(currentKelasValue)) {
-                filterKelas.value = '';
-            } else if (currentKelasValue && Array.from(kelasSet).includes(currentKelasValue)) {
-                filterKelas.value = currentKelasValue;
-            }
-        }
 
         window.filterSiswa = function() {
             const searchTerm = document.getElementById('search-siswa')?.value.toLowerCase().trim() || '';
-            const tingkat = document.getElementById('filter-tingkat')?.value;
-            const kelas = document.getElementById('filter-kelas-siswa')?.value;
-            
-            // Use stored data instead of fetching again
-            let filtered = allSiswaDataForFilter || [];
-            
-            // Apply search filter (nama or NISN)
-            if (searchTerm) {
-                filtered = filtered.filter(s => 
-                    (s.nama && s.nama.toLowerCase().includes(searchTerm)) ||
-                    (s.nisn && s.nisn.toLowerCase().includes(searchTerm))
-                );
-            }
-            
-            // Apply tingkat filter
-            if (tingkat) {
-                filtered = filtered.filter(s => s.kelas && s.kelas.startsWith(tingkat));
-            }
-            
-            // Apply kelas filter
-            if (kelas) {
-                filtered = filtered.filter(s => s.kelas === kelas);
-            }
-            
-            renderSiswa(filtered);
+            const kelas = document.getElementById('filter-kelas-siswa')?.value || '';
+            const rows = document.querySelectorAll('.row-data-siswa');
+            rows.forEach(row => {
+                const nama = row.querySelector('.row-nama').innerText.toLowerCase();
+                const nisn = row.querySelector('.row-nisn').innerText.toLowerCase();
+                const rowKelas = row.getAttribute('data-kelas');
+                const matchName = nama.includes(searchTerm) || nisn.includes(searchTerm);
+                const matchKelas = kelas === '' || rowKelas === kelas;
+                if (matchName && matchKelas) row.style.display = '';
+                else row.style.display = 'none';
+            });
         };
 
-        function renderSiswa(siswaList) {
-            const tbody = document.querySelector('#tbl-siswa tbody');
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            siswaList.forEach(siswa => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${siswa.nisn}</td>
-                    <td>${siswa.nama}</td>
-                    <td>${siswa.kelas}</td>
-                    <td>${siswa.kontak_ortu || '-'}</td>
-                    <td>${siswa.poin || 0}</td>
-                    <td>
-                        <button class="btn-edit-siswa" onclick="viewSiswa('${siswa.nisn}')">Lihat</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        window.viewSiswa = async function(nisn) {
-            try {
-                const response = await fetch(API_BASE_URL + '/siswa/' + nisn, {
-                    headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    const siswa = data.data;
-                    // Show siswa profile modal
-                    const modal = document.getElementById('siswaProfileModal');
-                    const picContainer = document.getElementById('siswaProfilePic');
-                    const namaEl = document.getElementById('siswaProfileNama');
-                    const nisnEl = document.getElementById('siswaProfileNisn');
-                    const jkEl = document.getElementById('siswaProfileJk');
-                    const kelasEl = document.getElementById('siswaProfileKelas');
-                    const poinEl = document.getElementById('siswaProfilePoin');
-                    const kontakEl = document.getElementById('siswaProfileKontak');
-                    
-                    if (modal) {
-                        // Set photo
-                        if (picContainer) {
-                            if (siswa.photo) {
-                                picContainer.innerHTML = `<img src="${siswa.photo}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" alt="Foto Siswa">`;
-                            } else {
-                                const initial = siswa.nama ? siswa.nama.charAt(0).toUpperCase() : 'S';
-                                picContainer.innerHTML = `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 700; color: white;">${initial}</div>`;
-                            }
-                        }
-                        
-                        if (namaEl) namaEl.textContent = siswa.nama || '-';
-                        if (nisnEl) nisnEl.textContent = siswa.nisn || '-';
-                        if (jkEl) jkEl.textContent = siswa.jk || '-';
-                        if (kelasEl) kelasEl.textContent = siswa.kelas || '-';
-                        if (poinEl) poinEl.textContent = siswa.poin || 0;
-                        if (kontakEl) kontakEl.textContent = siswa.kontak_ortu || '-';
-                        
-                        modal.style.display = 'flex';
-                    }
-                } else {
-                    showInfoModal('Error', data.message || 'Gagal memuat data siswa');
+        // ==========================================
+        // MODAL PROFIL SISWA 
+        // ==========================================
+        window.viewSiswaModal = function(nisn) {
+            const siswa = allSiswaData.find(s => s.nisn == nisn);
+            if (siswa) {
+                const picContainer = document.getElementById('siswaProfilePic');
+                if (picContainer) {
+                    if (siswa.photo) picContainer.innerHTML =
+                        `<img src="${siswa.photo}" style="width: 100%; height: 100%; object-fit: cover;">`;
+                    else picContainer.innerHTML = siswa.nama ? siswa.nama.charAt(0).toUpperCase() : 'S';
                 }
-            } catch (error) {
-                console.error('Error loading siswa:', error);
-                showInfoModal('Error', 'Terjadi kesalahan: ' + error.message);
+
+                document.getElementById('siswaProfileNama').textContent = siswa.nama || '-';
+                document.getElementById('siswaProfileNisn').textContent = siswa.nisn || '-';
+                document.getElementById('siswaProfileJk').textContent = siswa.jk || '-';
+                document.getElementById('siswaProfileKelas').textContent = siswa.kelas || '-';
+                document.getElementById('siswaProfilePoin').textContent = siswa.poin || 0;
+                document.getElementById('siswaProfileKontak').textContent = siswa.kontak_ortu || '-';
+
+                const modal = document.getElementById('siswaProfileModal');
+                const content = document.getElementById('siswaProfileContent');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modal.classList.add('opacity-100');
+                    content.classList.remove('scale-95');
+                    content.classList.add('scale-100');
+                }, 10);
             }
         };
 
         window.closeSiswaProfileModal = function() {
             const modal = document.getElementById('siswaProfileModal');
-            if (modal) {
-                modal.style.display = 'none';
+            const content = document.getElementById('siswaProfileContent');
+            if (modal && content) {
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }, 200);
             }
-        };
-
-        // ========== POIN SISWA ==========
-        let allSiswaData = []; // Store all siswa data for autocomplete
-        let allPelanggaranData = []; // Store all pelanggaran data
-
-        async function loadPoinData() {
-            // Load siswa data for autocomplete
-            try {
-                const response = await fetch(API_BASE_URL + '/siswa', {
-                    headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    allSiswaData = data.data || [];
-                    setupSiswaAutocomplete();
-                    populatePoinTingkatKelas();
-                }
-            } catch (error) {
-                console.error('Error loading siswa for poin:', error);
-            }
-
-            // Load pelanggaran data
-            try {
-                const response = await fetch(API_BASE_URL + '/pelanggaran', {
-                    headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    allPelanggaranData = data.data || [];
-                    setupPelanggaranAutocomplete();
-                }
-            } catch (error) {
-                console.error('Error loading pelanggaran:', error);
-            }
-
-            // Load riwayat poin
-            loadRiwayatPoin();
         }
 
-        function populatePoinTingkatKelas() {
-            const pTingkat = document.getElementById('p_tingkat');
-            const pKelas = document.getElementById('p_kelas_poin');
-            
-            if (!pTingkat || !pKelas) return;
-
-            // Populate tingkat
-            const tingkatSet = new Set();
-            allSiswaData.forEach(s => {
-                if (s.kelas) {
-                    const tingkat = s.kelas.split('.')[0];
-                    if (tingkat) tingkatSet.add(tingkat);
-                }
-            });
-
-            pTingkat.innerHTML = '<option value="">Pilih Tingkat</option>';
-            Array.from(tingkatSet).sort().forEach(tingkat => {
-                const option = document.createElement('option');
-                option.value = tingkat;
-                option.textContent = tingkat;
-                pTingkat.appendChild(option);
-            });
-
-            // Initial populate kelas (empty, wait for tingkat selection)
-            pKelas.innerHTML = '<option value="">Pilih Kelas</option>';
-
-            // Handle tingkat change
-            pTingkat.onchange = function() {
-                const tingkat = pTingkat.value;
-                pKelas.innerHTML = '<option value="">Pilih Kelas</option>';
-                
-                if (tingkat) {
-                    const kelasSet = new Set();
-                    allSiswaData.forEach(s => {
-                        // Only show classes that start with tingkat + '.' (e.g., "IX." not just "IX")
-                        if (s.kelas && s.kelas.startsWith(tingkat + '.')) {
-                            kelasSet.add(s.kelas);
-                        }
-                    });
-
-                    Array.from(kelasSet).sort().forEach(kelas => {
-                        const option = document.createElement('option');
-                        option.value = kelas;
-                        option.textContent = kelas;
-                        pKelas.appendChild(option);
-                    });
-                } else {
-                    // If no tingkat selected, show all classes
-                    const kelasSet = new Set();
-                    allSiswaData.forEach(s => {
-                        if (s.kelas) kelasSet.add(s.kelas);
-                    });
-                    Array.from(kelasSet).sort().forEach(kelas => {
-                        const option = document.createElement('option');
-                        option.value = kelas;
-                        option.textContent = kelas;
-                        pKelas.appendChild(option);
-                    });
-                }
-            };
-        }
-
+        // ==========================================
+        // AUTOCOMPLETE INPUT POIN 
+        // ==========================================
         function setupSiswaAutocomplete() {
-            const namaInput = document.getElementById('p_nama');
-            const namaList = document.getElementById('nama-list');
-            const nisnInput = document.getElementById('p_nisn');
-            const pTingkat = document.getElementById('p_tingkat');
-            const pKelas = document.getElementById('p_kelas_poin');
+            const newSearchEl = document.getElementById('p_nama');
+            const siswaList = document.getElementById('nama-list');
+            if (!newSearchEl || !siswaList) return;
 
-            if (!namaInput || !namaList || !nisnInput) return;
-
-            // Remove existing event listener if any
-            const newNamaInput = namaInput.cloneNode(true);
-            namaInput.parentNode.replaceChild(newNamaInput, namaInput);
-            const newNamaInputEl = document.getElementById('p_nama');
-
-            newNamaInputEl.addEventListener('input', function() {
-                const query = newNamaInputEl.value.toLowerCase().trim();
-                namaList.innerHTML = '';
-
+            newSearchEl.addEventListener('input', function() {
+                let query = this.value.toLowerCase().trim();
+                siswaList.innerHTML = '';
                 if (query.length > 0) {
-                    const filtered = allSiswaData.filter(s => 
-                        s.nama.toLowerCase().includes(query) || 
-                        s.nisn.toLowerCase().includes(query)
-                    );
-
+                    const filtered = allSiswaData.filter(s => s.nama.toLowerCase().includes(query) || s.nisn
+                        .includes(query)).slice(0, 10);
                     if (filtered.length > 0) {
-                        namaList.style.display = 'block';
+                        siswaList.classList.remove('hidden');
                         filtered.forEach(siswa => {
-                            const div = document.createElement('div');
-                            div.textContent = `${siswa.nama} (${siswa.nisn}) - ${siswa.kelas}`;
-                            div.style.cursor = 'pointer';
-                            div.style.padding = '10px 12px';
-                            div.style.borderBottom = '1px solid #eee';
-                            div.addEventListener('mouseenter', function() {
-                                this.style.backgroundColor = '#f0f0f0';
-                            });
-                            div.addEventListener('mouseleave', function() {
-                                this.style.backgroundColor = 'transparent';
-                            });
-                            div.addEventListener('click', function() {
-                                const namaInputEl = document.getElementById('p_nama');
-                                const nisnInputEl = document.getElementById('p_nisn');
-                                const pTingkatEl = document.getElementById('p_tingkat');
-                                const pKelasEl = document.getElementById('p_kelas_poin');
-                                
-                                if (namaInputEl) namaInputEl.value = siswa.nama;
-                                if (nisnInputEl) nisnInputEl.value = siswa.nisn;
-                                
-                                // Auto-fill tingkat dan kelas
-                                if (siswa.kelas) {
-                                    const [tingkat, ...rest] = siswa.kelas.split('.');
-                                    if (tingkat && pTingkatEl) {
-                                        pTingkatEl.value = tingkat;
-                                        
-                                        // Trigger change event untuk populate kelas
-                                        if (pTingkatEl.onchange) {
-                                            pTingkatEl.onchange();
-                                        }
-                                        
-                                        setTimeout(() => {
-                                            if (pKelasEl) {
-                                                pKelasEl.value = siswa.kelas;
-                                            }
-                                        }, 200);
-                                    }
-                                }
-                                
-                                namaList.style.display = 'none';
-                            });
-                            namaList.appendChild(div);
+                            let div = document.createElement('div');
+                            div.className =
+                                'px-4 py-3 hover:bg-green-50 cursor-pointer text-sm border-b border-gray-50 flex flex-col transition';
+                            div.innerHTML =
+                                `<span class="font-bold text-gray-700">${siswa.nama}</span> <span class="text-[10px] text-gray-400">NISN: ${siswa.nisn} | Kelas: ${siswa.kelas}</span>`;
+                            div.onclick = function() {
+                                document.getElementById('p_nama').value = siswa.nama;
+                                document.getElementById('p_nisn').value = siswa.nisn;
+                                document.getElementById('p_kelas_display').value = siswa.kelas;
+                                siswaList.classList.add('hidden');
+                            };
+                            siswaList.appendChild(div);
                         });
                     } else {
-                        namaList.style.display = 'none';
+                        siswaList.innerHTML =
+                            '<div class="px-4 py-3 text-sm text-gray-400 italic">Siswa tidak ditemukan</div>';
+                        siswaList.classList.remove('hidden');
                     }
                 } else {
-                    namaList.style.display = 'none';
+                    siswaList.classList.add('hidden');
                 }
             });
 
-            // Close autocomplete when clicking outside
             document.addEventListener('click', function(e) {
-                const namaInputEl = document.getElementById('p_nama');
-                const namaListEl = document.getElementById('nama-list');
-                if (namaInputEl && namaListEl && !namaInputEl.contains(e.target) && !namaListEl.contains(e.target)) {
-                    namaListEl.style.display = 'none';
+                if (!newSearchEl.contains(e.target) && !siswaList.contains(e.target)) {
+                    siswaList.classList.add('hidden');
                 }
             });
         }
 
         function setupPelanggaranAutocomplete() {
-            const searchInput = document.getElementById('p_search_pelanggaran');
+            const searchPelanggaran = document.getElementById('p_search_pelanggaran');
             const pelanggaranList = document.getElementById('pelanggaran-list');
-            const jenisPelanggaranSelect = document.getElementById('p_jenis_pelanggaran');
-            const jumlahPoinInput = document.getElementById('p_jumlah_poin');
-            const keteranganInput = document.getElementById('p_keterangan_pelanggaran');
+            if (!searchPelanggaran || !pelanggaranList) return;
 
-            if (!searchInput || !pelanggaranList || !jenisPelanggaranSelect) return;
-
-            // Update hidden fields when user types manually
-            searchInput.addEventListener('input', function() {
-                const query = searchInput.value.toLowerCase().trim();
+            function renderPelanggaran(data) {
                 pelanggaranList.innerHTML = '';
-
-                // Update keterangan from manual input
-                if (keteranganInput && query.length > 0) {
-                    keteranganInput.value = searchInput.value;
-                }
-
-                if (query.length > 0) {
-                    const filtered = allPelanggaranData.filter(p => 
-                        p.jenis.toLowerCase().includes(query)
-                    );
-
-                    // Jika ada pelanggaran yang cocok persis, isi jumlah poin otomatis
-                    const exactMatch = allPelanggaranData.find(p => 
-                        p.jenis.toLowerCase() === query
-                    );
-                    if (exactMatch && jumlahPoinInput) {
-                        jumlahPoinInput.value = exactMatch.skor_poin;
-                    }
-
-                    if (filtered.length > 0) {
-                        pelanggaranList.style.display = 'block';
-                        filtered.forEach(pelanggaran => {
-                            const div = document.createElement('div');
-                            div.textContent = `${pelanggaran.jenis} (${pelanggaran.skor_poin} poin)`;
-                            div.style.cursor = 'pointer';
-                            div.style.padding = '10px 12px';
-                            div.style.borderBottom = '1px solid #eee';
-                            div.addEventListener('mouseenter', function() {
-                                this.style.backgroundColor = '#f0f0f0';
-                            });
-                            div.addEventListener('mouseleave', function() {
-                                this.style.backgroundColor = 'transparent';
-                            });
-                            div.addEventListener('click', function() {
-                                searchInput.value = pelanggaran.jenis;
-                                if (jenisPelanggaranSelect) {
-                                    jenisPelanggaranSelect.value = pelanggaran.jenis;
-                                }
-                                if (jumlahPoinInput) {
-                                    jumlahPoinInput.value = pelanggaran.skor_poin;
-                                }
-                                if (keteranganInput) {
-                                    keteranganInput.value = pelanggaran.jenis + (pelanggaran.sanksi ? ' - ' + pelanggaran.sanksi : '');
-                                }
-                                pelanggaranList.style.display = 'none';
-                            });
-                            pelanggaranList.appendChild(div);
-                        });
-                    } else {
-                        pelanggaranList.style.display = 'none';
-                    }
+                if (data.length > 0) {
+                    pelanggaranList.classList.remove('hidden');
+                    data.forEach(item => {
+                        let div = document.createElement('div');
+                        div.className =
+                            'px-4 py-3 hover:bg-orange-50 cursor-pointer border-b border-gray-50 flex justify-between items-center transition gap-4';
+                        const jenis = item.jenis || item.ket || 'Pelanggaran';
+                        const poin = item.skor_poin || item.poin || 0;
+                        const sanksi = item.sanksi || 'Teguran';
+                        div.innerHTML = `
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-gray-700">${jenis}</span>
+                                <span class="text-[10px] text-gray-500 mt-1"><i class="fas fa-gavel text-red-400 mr-1"></i> Sanksi: ${sanksi}</span>
+                            </div>
+                            <span class="text-xs font-black bg-red-100 text-red-600 px-3 py-1.5 rounded-lg shrink-0 border border-red-200">+${poin} Poin</span>
+                        `;
+                        div.onclick = function() {
+                            searchPelanggaran.value = jenis;
+                            document.getElementById('p_jumlah_display').value = poin;
+                            document.getElementById('p_keterangan_pelanggaran').value = jenis;
+                            document.getElementById('p_jumlah_poin').value = poin;
+                            pelanggaranList.classList.add('hidden');
+                        };
+                        pelanggaranList.appendChild(div);
+                    });
                 } else {
-                    pelanggaranList.style.display = 'none';
-                    // Clear fields if search is empty
-                    if (keteranganInput) {
-                        keteranganInput.value = '';
-                    }
-                    if (jumlahPoinInput) {
-                        jumlahPoinInput.value = '';
-                    }
+                    pelanggaranList.classList.add('hidden');
+                }
+            }
+
+            searchPelanggaran.addEventListener('focus', function() {
+                if (this.value === '') renderPelanggaran(allPelanggaranData);
+            });
+
+            searchPelanggaran.addEventListener('input', function() {
+                let query = this.value.toLowerCase().trim();
+                document.getElementById('p_keterangan_pelanggaran').value = this.value;
+                if (query.length > 0) {
+                    let filtered = allPelanggaranData.filter(item => {
+                        let ket = item.jenis || item.ket || '';
+                        return ket.toLowerCase().includes(query);
+                    });
+                    renderPelanggaran(filtered);
+                } else {
+                    pelanggaranList.classList.add('hidden');
+                    document.getElementById('p_jumlah_display').value = '';
+                    document.getElementById('p_jumlah_poin').value = '';
                 }
             });
 
-            // Close autocomplete when clicking outside
             document.addEventListener('click', function(e) {
-                if (!searchInput.contains(e.target) && !pelanggaranList.contains(e.target)) {
-                    pelanggaranList.style.display = 'none';
+                if (!searchPelanggaran.contains(e.target) && !pelanggaranList.contains(e.target)) {
+                    pelanggaranList.classList.add('hidden');
                 }
             });
         }
 
-        let allRiwayatPoinData = [];
-
+        // ==========================================
+        // FETCH RIWAYAT POIN & SIMPAN DATA
+        // ==========================================
         async function loadRiwayatPoin() {
             try {
-                const response = await fetch(API_BASE_URL + '/poin/riwayat', {
+                const response = await fetch('/admin/poin/riwayat-data', {
                     headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
+                        'Accept': 'application/json'
                     }
                 });
-
                 const data = await response.json();
+
                 if (response.ok && data.success) {
-                    allRiwayatPoinData = data.data || [];
-                    renderRiwayatPoin(allRiwayatPoinData);
+                    const tbody = document.getElementById('riwayatTableBody');
+                    tbody.innerHTML = '';
+                    if (data.data.length > 0) {
+                        data.data.forEach(row => {
+                            let tr = document.createElement('tr');
+                            tr.className = 'hover:bg-gray-50 transition';
+                            let dateFormatted = new Date(row.waktu).toLocaleString('id-ID', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            let badgeClass = row.jenis === 'Tambah' ?
+                                'bg-red-50 text-red-600 border border-red-200' :
+                                'bg-green-50 text-green-600 border border-green-200';
+                            let prefixSign = row.jenis === 'Tambah' ? '+' : '-';
+                            tr.innerHTML = `
+                                <td class="py-5 pl-6 italic text-gray-400 font-medium whitespace-nowrap">${dateFormatted}</td>
+                                <td class="py-5">
+                                    <p class="font-black text-gray-700">${row.nama}</p>
+                                    <p class="text-[10px] text-gray-400 uppercase">${row.nisn}</p>
+                                </td>
+                                <td class="py-5 text-center font-bold text-gray-500">${row.kelas}</td>
+                                <td class="py-5 font-bold text-gray-600 max-w-xs">${row.ket}</td>
+                                <td class="py-5 text-center pr-6">
+                                    <span class="${badgeClass} px-3 py-1.5 rounded-lg font-black text-[10px]">${prefixSign}${row.jumlah}</span>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML =
+                            '<tr><td colspan="5" class="py-10 text-center text-gray-400 font-bold">Belum ada riwayat pelanggaran.</td></tr>';
+                    }
                 }
             } catch (error) {
                 console.error('Error loading riwayat poin:', error);
             }
         }
 
-        function renderRiwayatPoin(riwayatList) {
-            const tbody = document.querySelector('#tbl-poin tbody');
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            riwayatList.forEach(riwayat => {
-                const tr = document.createElement('tr');
-                const waktu = new Date(riwayat.waktu).toLocaleString('id-ID');
-                tr.innerHTML = `
-                    <td>${riwayat.nisn}</td>
-                    <td>${riwayat.nama}</td>
-                    <td>${riwayat.kelas}</td>
-                    <td>${riwayat.jenis === 'Tambah' ? '+' : '-'}${riwayat.jumlah}</td>
-                    <td>${riwayat.ket || '-'}</td>
-                    <td>${waktu}</td>
-                    <td>
-                        <button class="btn-hapus-riwayat-text" onclick="deleteRiwayatPoin(${riwayat.id})">Hapus</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        window.filterRiwayatPoin = function() {
-            const searchInput = document.getElementById('search-riwayat-poin');
-            if (!searchInput) {
-                renderRiwayatPoin(allRiwayatPoinData);
-                return;
-            }
-
-            const keyword = searchInput.value.toLowerCase().trim();
-            if (!keyword) {
-                renderRiwayatPoin(allRiwayatPoinData);
-                return;
-            }
-
-            const filtered = allRiwayatPoinData.filter(item => {
-                const nisn = (item.nisn || '').toString().toLowerCase();
-                const nama = (item.nama || '').toLowerCase();
-                const kelas = (item.kelas || '').toLowerCase();
-                const ket = (item.ket || '').toLowerCase();
-                return nisn.includes(keyword) || nama.includes(keyword) || kelas.includes(keyword) || ket.includes(keyword);
-            });
-
-            renderRiwayatPoin(filtered);
-        };
-
-        window.updatePoin = async function(e) {
+        window.submitPoinForm = async function(e) {
             e.preventDefault();
-            
             const nisn = document.getElementById('p_nisn')?.value.trim();
             const jumlahInput = document.getElementById('p_jumlah_poin')?.value.trim();
             const ketInput = document.getElementById('p_keterangan_pelanggaran')?.value.trim();
-            const searchPelanggaran = document.getElementById('p_search_pelanggaran')?.value.trim();
 
-            // Validasi
-            if (!nisn) {
-                showInfoModal('Error', 'Silakan pilih nama siswa terlebih dahulu!');
-                return;
-            }
-
-            // Jika jumlah poin tidak ada, coba ambil dari pelanggaran yang dipilih
-            let jumlah = parseInt(jumlahInput);
-            if (!jumlah || isNaN(jumlah)) {
-                // Cari pelanggaran yang sesuai dengan input
-                const pelanggaran = allPelanggaranData.find(p => 
-                    p.jenis.toLowerCase() === searchPelanggaran?.toLowerCase()
+            if (!nisn || !jumlahInput || !ketInput) {
+                showAlert('error',
+                    'Data belum lengkap! Pastikan Anda telah mencari dan memilih nama Siswa serta Jenis Pelanggaran dari saran yang muncul.'
                 );
-                if (pelanggaran) {
-                    jumlah = pelanggaran.skor_poin;
-                    // Update hidden field
-                    if (document.getElementById('p_jumlah_poin')) {
-                        document.getElementById('p_jumlah_poin').value = jumlah;
-                    }
-                } else {
-                    showInfoModal('Error', 'Jumlah poin wajib diisi! Silakan pilih jenis pelanggaran atau isi manual.');
-                    return;
-                }
-            }
-
-            // Jika keterangan tidak ada, gunakan input pelanggaran
-            let ket = ketInput;
-            if (!ket || ket.trim() === '') {
-                ket = searchPelanggaran || 'Pelanggaran';
-                // Update hidden field
-                if (document.getElementById('p_keterangan_pelanggaran')) {
-                    document.getElementById('p_keterangan_pelanggaran').value = ket;
-                }
-            }
-
-            if (!ket || ket.trim() === '') {
-                showInfoModal('Error', 'Keterangan pelanggaran wajib diisi!');
                 return;
             }
 
             try {
-                const response = await fetch(API_BASE_URL + '/poin', {
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+                submitBtn.disabled = true;
+
+                const formData = new FormData();
+                formData.append('nisn', nisn);
+                formData.append('jumlah', jumlahInput);
+                formData.append('ket', ketInput);
+                formData.append('_token', CSRF_TOKEN);
+
+                const response = await fetch('/admin/poin/add', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        nisn: nisn,
-                        jumlah: jumlah,
-                        ket: ket
-                    })
+                    body: formData
                 });
 
                 const data = await response.json();
-                if (response.ok && data.success) {
-                    showInfoModal('Berhasil', data.message || 'Poin siswa berhasil diupdate!');
-                    // Reset form
-                    document.getElementById('poinForm').reset();
-                    document.getElementById('p_nisn').value = '';
-                    document.getElementById('p_jumlah_poin').value = '';
-                    document.getElementById('p_keterangan_pelanggaran').value = '';
-                    document.getElementById('p_tingkat').value = '';
-                    document.getElementById('p_kelas_poin').innerHTML = '<option value="">Pilih Kelas</option>';
+
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+
+                if (response.ok) {
+                    showAlert('success', 'Poin pelanggaran berhasil ditambahkan!');
+                    resetForm();
                     loadRiwayatPoin();
-                    loadSiswa(); // Reload siswa to update poin
-                    loadDashboardData(); // Reload dashboard to update poin
+                    setTimeout(() => window.location.reload(), 1500); // Reload agar tabel list siswa up-to-date
                 } else {
-                    const errorMsg = data.message || data.errors ? JSON.stringify(data.errors || data.message) : 'Gagal mengupdate poin siswa';
-                    showInfoModal('Error', errorMsg);
+                    showAlert('error', data.message || 'Gagal menyimpan poin. Cek kembali isian form.');
                 }
             } catch (error) {
-                console.error('Error updating poin:', error);
-                showInfoModal('Error', 'Terjadi kesalahan: ' + error.message);
+                showAlert('error', 'Terjadi kesalahan koneksi server saat memproses data.');
             }
         };
 
-        window.deleteRiwayatPoin = async function(id) {
-            if (!confirm('Apakah Anda yakin ingin menghapus riwayat poin ini?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(API_BASE_URL + '/poin/riwayat/' + id, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': 'Bearer ' + AUTH_TOKEN,
-                        'Accept': 'application/json',
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const profileDropdown = document.getElementById('profileDropdownMenu');
+            const profileButton = document.getElementById('profileDropdownBtn');
+            if (profileButton && profileDropdown) {
+                profileButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const isHidden = profileDropdown.classList.contains('hidden');
+                    if (isHidden) {
+                        profileDropdown.classList.remove('hidden');
+                        setTimeout(() => {
+                            profileDropdown.classList.remove('opacity-0', 'scale-95');
+                            profileDropdown.classList.add('opacity-100', 'scale-100');
+                        }, 10);
+                    } else {
+                        profileDropdown.classList.remove('opacity-100', 'scale-100');
+                        profileDropdown.classList.add('opacity-0', 'scale-95');
+                        setTimeout(() => profileDropdown.classList.add('hidden'), 200);
                     }
                 });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showInfoModal('Berhasil', 'Riwayat poin berhasil dihapus!');
-                    loadRiwayatPoin();
-                    loadSiswa(); // Reload siswa to update poin
-                    loadDashboardData(); // Update dashboard too
-                } else {
-                    showInfoModal('Error', data.message || 'Gagal menghapus riwayat poin');
-                }
-            } catch (error) {
-                console.error('Error deleting riwayat poin:', error);
-                showInfoModal('Error', 'Terjadi kesalahan: ' + error.message);
             }
-        };
+            document.addEventListener('click', function(e) {
+                if (profileDropdown && !profileDropdown.contains(e.target) && !profileButton.contains(e
+                        .target)) {
+                    profileDropdown.classList.remove('opacity-100', 'scale-100');
+                    profileDropdown.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => profileDropdown.classList.add('hidden'), 200);
+                }
+            });
+
+            // Parse URL parameters to set active view (Berguna saat kembali setelah balas form konsultasi)
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetView = urlParams.get('view');
+            if (targetView) {
+                showView(targetView);
+            }
+
+            setupSiswaAutocomplete();
+            setupPelanggaranAutocomplete();
+            loadRiwayatPoin();
+        });
     </script>
 </body>
-</html>
 
+</html>

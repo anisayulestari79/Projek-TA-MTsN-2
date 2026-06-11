@@ -10,7 +10,7 @@ class Guru extends Model
     use HasFactory;
 
     protected $table = 'guru';
-    
+
     protected $fillable = [
         'nip',
         'nama',
@@ -20,6 +20,8 @@ class Guru extends Model
         'tanggal_lahir',
         'password',
         'wali_kelas',
+        'role',
+        'kelas_binaan'
     ];
 
     protected $hidden = [
@@ -35,4 +37,3 @@ class Guru extends Model
         return null;
     }
 }
-

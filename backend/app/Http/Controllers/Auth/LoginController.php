@@ -102,7 +102,7 @@ class LoginController extends Controller
                 'photo'    => $user->photo,
             ]);
 
-            return redirect()->route('kamad.dashboard')->with('success', 'Selamat datang di Panel Pimpinan.');
+            return redirect()->route('kamad.kamad-dashboard')->with('success', 'Selamat datang di Panel Pimpinan.');
         } catch (\Exception $e) {
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -121,7 +121,7 @@ class LoginController extends Controller
         try {
             // Cari di tabel users terlebih dahulu
             $user = User::where('nip', $request->nip)
-                ->where('role', 'guru')
+                ->whereIn('role', ['guru', 'bk'])
                 ->first();
 
             // Jika tidak ditemukan di users, cek di tabel guru (integrasi otomatis)
@@ -146,7 +146,7 @@ class LoginController extends Controller
                             'name'     => $guru->nama,
                             'email'    => $email,
                             'nip'      => $loginId,
-                            'role'     => 'guru',
+                            'role'     => $guru->role ?? 'guru',
                             'gender'   => $guru->jk,
                             'password' => Hash::make($guru->password), // Hash password dari guru
                         ]);

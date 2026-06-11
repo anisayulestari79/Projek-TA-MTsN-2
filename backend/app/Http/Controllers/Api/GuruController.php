@@ -5,33 +5,34 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Guru;
 use App\Models\User;
+use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Session; // <-- Tambahan library Session
+use Illuminate\Support\Facades\Session;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class GuruController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Ambil data user yang sedang login untuk header
         $user = Session::get('user');
 
-        // 2. Query dasar (urutkan berdasarkan nama)
         $query = Guru::orderBy('nama');
 
-        // 3. Logika untuk fitur pencarian NIP atau Nama
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where('nama', 'LIKE', "%{$search}%")
                 ->orWhere('nip', 'LIKE', "%{$search}%");
         }
 
-        // Eksekusi query dengan pagination (menampilkan 10 data per halaman)
         $guru = $query->paginate(10)->withQueryString();
 
-        // 4. Jika diakses melalui API (Postman/Mobile), kembalikan JSON
+        $dataKelas = Kelas::orderBy('tingkat', 'asc')
+            ->orderBy('nama_kelas', 'asc')
+            ->get()
+            ->groupBy('tingkat');
+
         if ($request->wantsJson() || $request->is('api/*')) {
             return response()->json([
                 'success' => true,
@@ -39,10 +40,10 @@ class GuruController extends Controller
             ]);
         }
 
-        // 5. Jika diakses lewat Browser Web, kembalikan tampilan Blade HTML
         return view('admin.admin-dataguru', [
             'dataGuru' => $guru,
-            'user' => $user
+            'user' => $user,
+            'dataKelas' => $dataKelas
         ]);
     }
 
@@ -57,9 +58,9 @@ class GuruController extends Controller
             ], 404);
         }
 
-        // Ambil data user terkait jika ada
         $loginId = $guru->nip;
-        $user = User::where('nip', $loginId)->where('role', 'guru')->first();
+        // Cari user yang rolenya 'guru' atau 'bk'
+        $user = User::where('nip', $loginId)->whereIn('role', ['guru', 'bk'])->first();
 
         $guruData = $guru->toArray();
         if ($user) {
@@ -68,6 +69,7 @@ class GuruController extends Controller
                 'username' => $user->username,
                 'phone' => $user->phone,
                 'photo' => $user->photo,
+                'role' => $user->role,
             ];
         } else {
             $guruData['user_account'] = null;
@@ -90,6 +92,8 @@ class GuruController extends Controller
             'tanggal_lahir' => 'nullable|date',
             'password' => 'nullable|string',
             'wali_kelas' => 'nullable|string',
+            'role' => 'required|in:guru,bk', // Validasi Peran (Guru/BK)
+            'kelas_binaan' => 'nullable|array', // Validasi Array dari Checkbox
         ]);
 
         if ($validator->fails()) {
@@ -103,14 +107,14 @@ class GuruController extends Controller
             return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Gagal menambah data! Periksa kembali isian Anda.');
         }
 
-        // Normalisasi NIP: anggap kosong atau "-" sebagai null
+        // Normalisasi NIP
         $normalizedNip = $request->nip;
         if ($normalizedNip === '-' || $normalizedNip === '') {
             $normalizedNip = null;
         }
 
-        // Check if wali kelas already exists
-        if ($request->wali_kelas) {
+        // Cek duplikasi Wali Kelas (Hanya jika perannya Guru)
+        if ($request->role === 'guru' && $request->wali_kelas) {
             $existingWali = Guru::where('wali_kelas', $request->wali_kelas)->first();
 
             if ($existingWali) {
@@ -124,10 +128,8 @@ class GuruController extends Controller
             }
         }
 
-        // Tentukan ID login (pakai NIP)
         $loginId = $normalizedNip;
 
-        // Check if login ID already exists in users table
         if ($loginId) {
             $existingUser = User::where('nip', $loginId)->first();
             if ($existingUser) {
@@ -143,7 +145,7 @@ class GuruController extends Controller
 
         $password = $request->password ?: 'mtsn02';
 
-        // Create guru in guru table
+        // SIMPAN KE TABEL GURU
         $guru = Guru::create([
             'nip' => $normalizedNip,
             'nama' => $request->nama,
@@ -152,18 +154,19 @@ class GuruController extends Controller
             'tempat_lahir' => $request->tempat_lahir,
             'tanggal_lahir' => $request->tanggal_lahir,
             'password' => $password,
-            'wali_kelas' => $request->wali_kelas,
+            'role' => $request->role,
+            // Jika dia BK, kosongkan wali kelas. Jika Guru, isi wali kelas.
+            'wali_kelas' => $request->role === 'guru' ? $request->wali_kelas : null,
+            // Jika dia BK dan memilih kelas binaan, ubah array ke JSON Text. Jika bukan BK, kosongkan.
+            'kelas_binaan' => $request->role === 'bk' && $request->has('kelas_binaan') ? json_encode($request->kelas_binaan) : null,
         ]);
 
-        // Create user in users table for login
+        // SIMPAN KE TABEL USERS
         if ($loginId) {
-            // Generate email from login ID if not provided
             $email = $request->email ?? ($loginId . '@mtsn2bjm.sch.id');
 
-            // Check if email already exists
             $existingEmail = User::where('email', $email)->first();
             if ($existingEmail) {
-                // If email exists, use NIP + timestamp
                 $email = $loginId . '_' . time() . '@mtsn2bjm.sch.id';
             }
 
@@ -171,7 +174,7 @@ class GuruController extends Controller
                 'name' => $request->nama,
                 'email' => $email,
                 'nip' => $loginId,
-                'role' => 'guru',
+                'role' => $request->role, // Simpan sebagai guru / bk
                 'gender' => $request->jk,
                 'password' => Hash::make($password),
             ]);
@@ -211,6 +214,8 @@ class GuruController extends Controller
             'tanggal_lahir' => 'nullable|date',
             'password' => 'nullable|string',
             'wali_kelas' => 'nullable|string',
+            'role' => 'required|in:guru,bk',
+            'kelas_binaan' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -224,14 +229,12 @@ class GuruController extends Controller
             return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Gagal mengupdate data! Periksa kembali isian Anda.');
         }
 
-        // Normalisasi NIP baru: anggap kosong atau "-" sebagai null
         $normalizedNip = $request->nip;
         if ($normalizedNip === '-' || $normalizedNip === '') {
             $normalizedNip = null;
         }
 
-        // Check if wali kelas already exists
-        if ($request->wali_kelas && $request->wali_kelas !== $guru->wali_kelas) {
+        if ($request->role === 'guru' && $request->wali_kelas && $request->wali_kelas !== $guru->wali_kelas) {
             $existingWali = Guru::where('wali_kelas', $request->wali_kelas)
                 ->where('id', '!=', $id)
                 ->first();
@@ -247,11 +250,9 @@ class GuruController extends Controller
             }
         }
 
-        // Hitung login ID lama & baru (pakai NIP)
         $oldLoginId = ($guru->nip && $guru->nip !== '-') ? $guru->nip : null;
         $newLoginId = ($normalizedNip && $normalizedNip !== '-') ? $normalizedNip : null;
 
-        // Check if login ID baru sudah dipakai user lain (jika berubah)
         if ($newLoginId && $newLoginId !== $oldLoginId) {
             $existingUser = User::where('nip', $newLoginId)->first();
             if ($existingUser) {
@@ -265,14 +266,17 @@ class GuruController extends Controller
             }
         }
 
+        // UPDATE DATA GURU
         $updateData = [
-            'nip' => $normalizedNip, // Pastikan NIP bisa diubah, termasuk menjadi null
+            'nip' => $normalizedNip,
             'nama' => $request->nama,
             'jk' => $request->jk,
             'pendidikan' => $request->pendidikan,
             'tempat_lahir' => $request->tempat_lahir,
             'tanggal_lahir' => $request->tanggal_lahir,
-            'wali_kelas' => $request->wali_kelas,
+            'role' => $request->role,
+            'wali_kelas' => $request->role === 'guru' ? $request->wali_kelas : null,
+            'kelas_binaan' => $request->role === 'bk' && $request->has('kelas_binaan') ? json_encode($request->kelas_binaan) : null,
         ];
 
         if ($request->password) {
@@ -280,27 +284,25 @@ class GuruController extends Controller
         }
 
         $guru->update($updateData);
-        $guru->refresh(); // Refresh to get updated NIP
-        // Hitung ulang login ID baru setelah update (bisa saja berubah)
+        $guru->refresh();
         $newLoginId = ($guru->nip && $guru->nip !== '-') ? $guru->nip : null;
 
-        // Sinkronisasi user di tabel users berdasarkan login ID
+        // UPDATE DATA USERS
         if ($newLoginId) {
             if ($oldLoginId && $oldLoginId !== $newLoginId) {
-                // Login ID berubah: update user lama jika ada
                 $user = User::where('nip', $oldLoginId)->first();
                 if ($user) {
                     $userUpdateData = [
                         'name' => $request->nama,
                         'gender' => $request->jk,
                         'nip' => $newLoginId,
+                        'role' => $request->role,
                     ];
                     if ($request->password) {
                         $userUpdateData['password'] = Hash::make($request->password);
                     }
                     $user->update($userUpdateData);
                 } else {
-                    // Tidak ada user lama, buat baru
                     $email = $request->email ?? ($newLoginId . '@mtsn2bjm.sch.id');
                     $existingEmail = User::where('email', $email)->first();
                     if ($existingEmail) {
@@ -311,18 +313,18 @@ class GuruController extends Controller
                         'name' => $request->nama,
                         'email' => $email,
                         'nip' => $newLoginId,
-                        'role' => 'guru',
+                        'role' => $request->role,
                         'gender' => $request->jk,
                         'password' => Hash::make($request->password ?: $guru->password),
                     ]);
                 }
             } else {
-                // Login ID tidak berubah: update atau buat user baru
                 $user = User::where('nip', $newLoginId)->first();
                 if ($user) {
                     $userUpdateData = [
                         'name' => $request->nama,
                         'gender' => $request->jk,
+                        'role' => $request->role,
                     ];
                     if ($request->password) {
                         $userUpdateData['password'] = Hash::make($request->password);
@@ -339,14 +341,13 @@ class GuruController extends Controller
                         'name' => $request->nama,
                         'email' => $email,
                         'nip' => $newLoginId,
-                        'role' => 'guru',
+                        'role' => $request->role,
                         'gender' => $request->jk,
                         'password' => Hash::make($request->password ?: $guru->password),
                     ]);
                 }
             }
         } else {
-            // Tidak ada login ID baru, hapus user berdasarkan login ID lama jika ada
             if ($oldLoginId) {
                 $user = User::where('nip', $oldLoginId)->first();
                 if ($user) {
@@ -509,7 +510,7 @@ class GuruController extends Controller
                         'name' => $nama,
                         'email' => $email,
                         'nip' => $loginId,
-                        'role' => 'guru',
+                        'role' => 'guru', // Import default role selalu sebagai 'guru'
                         'gender' => $jk,
                         'password' => Hash::make($password),
                     ]);

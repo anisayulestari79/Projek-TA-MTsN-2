@@ -65,6 +65,10 @@ Route::middleware('web')->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::get('/guru/dashboard', [DashboardController::class, 'guru'])->name('guru.dashboard');
 
+    // --- FITUR GURU BK ---
+    Route::post('/guru/konsultasi/kirim', [ConsultationController::class, 'kirimDariBK'])->name('guru.konsultasi.kirim');
+    Route::post('/guru/konsultasi/{id}/balas', [ConsultationController::class, 'balasDariBK'])->name('guru.konsultasi.balas');
+
     // 👇 NAMA ROUTE DISERAGAMKAN MENJADI 'kamad.dashboard'
     Route::get('/kamad/dashboard', [DashboardController::class, 'kamad'])->name('kamad.kamad-dashboard');
 
@@ -148,4 +152,6 @@ Route::middleware('web')->group(function () {
     Route::get('/ortu/dashboard', [App\Http\Controllers\OrtuController::class, 'index'])->name('ortu.dashboard');
     Route::get('/ortu/konsultasi', [App\Http\Controllers\OrtuController::class, 'konsultasi'])->name('ortu.konsultasi');
     Route::post('/ortu/konsultasi/kirim', [App\Http\Controllers\OrtuController::class, 'kirimKonsultasi'])->name('ortu.konsultasi.kirim');
+    Route::post('/ortu/tambah-anak', [App\Http\Controllers\OrtuController::class, 'tambahAnak'])->name('ortu.tambah-anak');
+    Route::post('/ortu/konsultasi/{id}/balas', [App\Http\Controllers\OrtuController::class, 'balasKonsultasi'])->name('ortu.konsultasi.balas');
 });

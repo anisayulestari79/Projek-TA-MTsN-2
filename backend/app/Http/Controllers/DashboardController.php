@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Carbon\Carbon;
 
+
 class DashboardController extends Controller
 {
     public function admin()
@@ -89,7 +90,8 @@ class DashboardController extends Controller
         }
 
         $sessionUser = Session::get('user');
-        if ($sessionUser['role'] !== 'guru') {
+
+        if (!in_array($sessionUser['role'], ['guru', 'bk'])) {
             return redirect()->route('index')->with('error', 'Akses ditolak');
         }
 
@@ -113,8 +115,63 @@ class DashboardController extends Controller
             $user = $sessionUser;
         }
 
-        return view('dashboard.guru', compact('user'));
+        // ========================================================
+        // TAMBAHAN DATA UNTUK DASHBOARD GURU
+        // ========================================================
+
+        // 1. Ambil Data Siswa Langsung dari Database
+        $dataSiswa = \App\Models\Siswa::orderBy('nama', 'asc')->get();
+        $totalSiswa = $dataSiswa->count();
+
+        // 2. Ambil Referensi Pelanggaran
+        $dataPelanggaran = \App\Models\Pelanggaran::all();
+
+        // 3. Mengambil daftar kelas
+        try {
+            $daftarKelas = \App\Models\Kelas::orderBy('nama_kelas')->pluck('nama_kelas');
+        } catch (\Exception $e) {
+            $daftarKelas = \App\Models\Siswa::select('kelas')->distinct()->pluck('kelas')->filter()->sort()->values();
+        }
+
+        // 4. Hitung Input Poin Hari Ini
+        $inputHariIni = \App\Models\RiwayatPoin::whereDate('waktu', \Carbon\Carbon::today())->count();
+
+
+        // === LOGIKA KHUSUS GURU BK (Mencari Siswa Binaan & Konsultasinya) ===
+        $guruDb = \App\Models\Guru::where('nip', $user['nip'])->first();
+        $siswaBinaan = collect([]);
+        $konsultasi = collect([]);
+
+        if ($user['role'] === 'bk' && $guruDb && $guruDb->kelas_binaan) {
+            // Karena kelas_binaan disimpan sebagai text JSON (misal: '["IX A", "IX B"]'), kita decode menjadi Array
+            $kelasArray = json_decode($guruDb->kelas_binaan, true);
+
+            if (is_array($kelasArray) && count($kelasArray) > 0) {
+                // Ambil daftar siswa yang berada di kelas binaan BK ini
+                $siswaBinaan = \App\Models\Siswa::whereIn('kelas', $kelasArray)->orderBy('nama', 'asc')->get();
+
+                // Ambil daftar konsultasi HANYA untuk siswa-siswa binaan tersebut
+                $siswaIds = $siswaBinaan->pluck('id')->toArray();
+                $konsultasi = \App\Models\Consultation::with(['student', 'parent'])
+                    ->whereIn('student_id', $siswaIds)
+                    ->latest()
+                    ->get();
+            }
+        }
+
+        // Tampilkan Dashboard Guru/BK dengan data yang sudah di-filter
+        return view('dashboard.guru', compact(
+            'user',
+            'dataSiswa',
+            'totalSiswa',
+            'dataPelanggaran',
+            'daftarKelas',
+            'inputHariIni',
+            'siswaBinaan',
+            'konsultasi'
+        ));
     }
+
 
     // ========================================================
     // FUNGSI UNTUK MENAMPILKAN HALAMAN AUDIT LOG
