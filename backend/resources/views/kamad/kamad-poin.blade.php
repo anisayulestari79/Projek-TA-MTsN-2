@@ -172,7 +172,7 @@
                         <select name="kelas" onchange="this.form.submit()"
                             class="pl-10 pr-8 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition cursor-pointer appearance-none">
                             <option value="">Semua Kelas</option>
-                            @foreach ($daftarKelas ?? [] as $kelas)
+                            @foreach ($kelasList ?? [] as $kelas)
                                 <option value="{{ $kelas }}"
                                     {{ request('kelas') == $kelas ? 'selected' : '' }}>
                                     Kelas {{ $kelas }}
@@ -206,60 +206,84 @@
                         class="text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-50 print:text-black print:border-b-2 print:border-gray-800">
                         <tr>
                             <th class="pb-5 pl-4 w-16 print:py-3 print:border print:border-gray-400">No</th>
-                            <th class="pb-5 print:py-3 print:pl-4 print:border print:border-gray-400">NISN</th>
-                            <th class="pb-5 print:py-3 print:pl-4 print:border print:border-gray-400">Nama Lengkap
-                                Siswa</th>
+                            <th class="pb-5 print:py-3 print:pl-4 print:border print:border-gray-400">Waktu / Tanggal
+                            </th>
+                            <th class="pb-5 print:py-3 print:pl-4 print:border print:border-gray-400">NISN / Nama
+                                Lengkap Siswa</th>
                             <th class="pb-5 text-center print:py-3 print:border print:border-gray-400">Kelas</th>
-                            <th class="pb-5 text-center print:py-3 print:border print:border-gray-400">Total Poin</th>
+                            <th class="pb-5 print:py-3 print:pl-4 print:border print:border-gray-400">Keterangan
+                                Pelanggaran</th>
+                            <th class="pb-5 text-center print:py-3 print:border print:border-gray-400">Foto Bukti</th>
+                            <th class="pb-5 text-center print:py-3 print:border print:border-gray-400">Poin Masuk</th>
                         </tr>
                     </thead>
                     <tbody class="text-xs divide-y divide-gray-50 print:divide-none">
-                        @forelse($siswaPelanggaran ?? [] as $index => $siswa)
+                        @forelse($laporan ?? [] as $index => $item)
                             <tr class="hover:bg-gray-50/50 transition row-siswa print:text-black">
                                 <td
                                     class="py-5 pl-4 font-bold text-gray-400 print:py-2 print:text-black print:border print:border-gray-400">
                                     {{ $index + 1 }}</td>
                                 <td
-                                    class="py-5 font-bold text-gray-500 nisn-col print:py-2 print:pl-4 print:text-black print:border print:border-gray-400">
-                                    {{ $siswa->nisn }}</td>
+                                    class="py-5 italic text-gray-400 font-medium whitespace-nowrap print:py-2 print:text-black print:border print:border-gray-400">
+                                    {{ \Carbon\Carbon::parse($item->waktu)->format('d M Y, H:i') }}
+                                </td>
                                 <td
-                                    class="py-5 font-black text-gray-800 nama-col print:py-2 print:pl-4 print:text-black print:border print:border-gray-400">
-                                    {{ $siswa->nama }}</td>
+                                    class="py-5 print:py-2 print:pl-4 print:text-black print:border print:border-gray-400">
+                                    <p class="font-black text-gray-800 nama-col print:text-black">{{ $item->nama }}
+                                    </p>
+                                    <p class="text-[10px] text-gray-400 uppercase nisn-col print:text-gray-700">
+                                        {{ $item->nisn }}</p>
+                                </td>
                                 <td
-                                    class="py-5 font-bold text-gray-500 text-center print:py-2 print:text-black print:border print:border-gray-400">
-                                    {{ $siswa->kelas }}</td>
+                                    class="py-5 text-center font-bold text-[#10b981] print:py-2 print:text-black print:border print:border-gray-400">
+                                    {{ $item->kelas }}
+                                </td>
+                                <td class="py-5 text-gray-600 max-w-[300px] truncate print:whitespace-normal print:max-w-none print:py-2 print:text-black print:border print:border-gray-400"
+                                    title="{{ $item->ket }}">
+                                    {{ $item->ket }}
+                                </td>
+                                <td
+                                    class="py-5 text-center print:py-2 print:text-black print:border print:border-gray-400">
+                                    @if (isset($item->foto_bukti) && $item->foto_bukti)
+                                        <button type="button"
+                                            onclick="openFotoBuktiModal('{{ asset('storage/' . $item->foto_bukti) }}')"
+                                            class="print:hidden inline-flex bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-green-100 transition items-center gap-1 border border-green-100 shadow-sm cursor-pointer">
+                                            <i class="fas fa-search-plus"></i> Lihat Foto
+                                        </button>
+                                        <span
+                                            class="hidden print:inline text-[10px] text-gray-500 italic">Terlampir</span>
+                                    @else
+                                        <span
+                                            class="text-[10px] text-gray-400 italic font-medium bg-gray-50 px-3 py-1 rounded-lg border border-gray-100 print:border-none print:bg-transparent">Tanpa
+                                            Bukti</span>
+                                    @endif
+                                </td>
                                 <td
                                     class="py-5 text-center print:py-2 print:text-black print:border print:border-gray-400">
                                     <!-- Menghilangkan warna background saat diprint agar irit tinta dan jelas -->
-                                    <span class="print:hidden">
-                                        @if (($siswa->poin ?? 0) >= 100)
-                                            <span
-                                                class="bg-red-100 text-red-700 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin }}</span>
-                                        @elseif(($siswa->poin ?? 0) >= 50)
-                                            <span
-                                                class="bg-orange-100 text-orange-700 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin }}</span>
-                                        @elseif(($siswa->poin ?? 0) >= 25)
-                                            <span
-                                                class="bg-yellow-100 text-yellow-700 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin }}</span>
-                                        @else
-                                            <span
-                                                class="bg-green-50 text-green-600 px-4 py-1.5 rounded-full font-black">{{ $siswa->poin ?? 0 }}</span>
-                                        @endif
+                                    <span
+                                        class="print:hidden bg-red-50 text-red-600 border border-red-100 px-3 py-1 rounded-lg font-black">
+                                        +{{ $item->jumlah }}
                                     </span>
                                     <span class="hidden print:inline font-bold">
-                                        {{ $siswa->poin ?? 0 }}
+                                        +{{ $item->jumlah }}
                                     </span>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5"
+                                <td colspan="7"
                                     class="py-8 text-center text-gray-400 font-bold text-sm print:border print:border-gray-400">
-                                    Belum ada data siswa yang diinputkan di sistem.</td>
+                                    Belum ada data riwayat pelanggaran untuk ditampilkan.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
+
+                <!-- Pagination Laravel -->
+                <div class="mt-8 print:hidden">
+                    {{ $laporan->links() ?? '' }}
+                </div>
 
                 <!-- TTD Kamad (Hanya muncul saat diprint) -->
                 <div class="hidden print:flex justify-end mt-16 mr-12">
@@ -276,6 +300,54 @@
         </div>
 
     </main>
+
+    <!-- MODAL FOTO BUKTI PELANGGARAN -->
+    <div id="fotoBuktiModal"
+        class="fixed inset-0 bg-black/80 hidden z-[70] flex items-center justify-center backdrop-blur-sm transition-opacity opacity-0 duration-200 print:hidden">
+        <div class="bg-white rounded-2xl overflow-hidden shadow-2xl relative max-w-3xl w-full mx-4 transform scale-95 transition-transform duration-200"
+            id="fotoBuktiContent">
+
+            <!-- Header Modal -->
+            <div class="px-6 py-4 bg-gray-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm uppercase tracking-wider"><i class="fas fa-image mr-2"></i> Foto Bukti
+                    Pelanggaran</h3>
+                <button onclick="closeFotoBuktiModal()"
+                    class="text-gray-400 hover:text-white transition focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Tempat Foto -->
+            <div class="p-2 bg-gray-100 flex justify-center items-center relative"
+                style="min-height: 300px; max-height: 70vh;">
+                <!-- Loading Spinner (terlihat saat gambar dimuat) -->
+                <div id="fotoBuktiLoading"
+                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 z-0">
+                    <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
+                    <span class="text-xs font-bold">Memuat gambar...</span>
+                </div>
+
+                <!-- Gambar Asli -->
+                <img id="fotoBuktiImage" src="" alt="Bukti Pelanggaran"
+                    class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm relative z-10 hidden"
+                    onload="document.getElementById('fotoBuktiLoading').classList.add('hidden'); this.classList.remove('hidden');">
+            </div>
+
+            <!-- Footer Bantuan -->
+            <div
+                class="px-6 py-3 bg-gray-50 border-t border-gray-200 text-center flex justify-center items-center gap-4">
+                <a id="downloadFotoBtn" href="#" download
+                    class="text-xs font-bold text-gray-600 hover:text-blue-600 transition flex items-center gap-1">
+                    <i class="fas fa-download"></i> Unduh Foto
+                </a>
+                <span class="text-gray-300">|</span>
+                <button onclick="closeFotoBuktiModal()"
+                    class="text-xs font-bold text-gray-600 hover:text-gray-900 transition flex items-center gap-1">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- SCRIPT -->
     <script>
@@ -332,6 +404,75 @@
                 }
             });
         }
+
+        // ==========================================
+        // MODAL FOTO BUKTI
+        // ==========================================
+        window.openFotoBuktiModal = function(url) {
+            const modal = document.getElementById('fotoBuktiModal');
+            const content = document.getElementById('fotoBuktiContent');
+            const img = document.getElementById('fotoBuktiImage');
+            const loading = document.getElementById('fotoBuktiLoading');
+            const downloadBtn = document.getElementById('downloadFotoBtn');
+
+            // Tampilkan loading, sembunyikan gambar lama
+            img.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            // Set source gambar
+            img.src = url;
+            downloadBtn.href = url;
+
+            // Tampilkan modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Animasi masuk
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('opacity-100');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        };
+
+        window.closeFotoBuktiModal = function() {
+            const modal = document.getElementById('fotoBuktiModal');
+            const content = document.getElementById('fotoBuktiContent');
+            const img = document.getElementById('fotoBuktiImage');
+
+            if (modal && content) {
+                // Animasi keluar
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0');
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    img.src = ""; // Bersihkan src
+                }, 200);
+            }
+        };
+
+        // Tutup modal jika area luar (backdrop) diklik
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('fotoBuktiModal');
+            if (event.target === modal) {
+                closeFotoBuktiModal();
+            }
+        });
+
+        // Tangani tombol ESC untuk menutup modal foto
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                const fotoModal = document.getElementById('fotoBuktiModal');
+                if (fotoModal && !fotoModal.classList.contains('hidden')) {
+                    closeFotoBuktiModal();
+                }
+            }
+        });
     </script>
 </body>
 

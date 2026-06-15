@@ -54,12 +54,13 @@ class PoinController extends Controller
             'nisn' => 'required|string|exists:siswa,nisn',
             'jumlah' => 'required|integer',
             'ket' => 'required|string',
+            'foto_bukti' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Validasi foto maks 2MB
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal, pastikan data siswa benar.',
+                'message' => 'Validasi gagal. Pastikan format foto benar (JPG/PNG) dan max 2MB.',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -71,6 +72,15 @@ class PoinController extends Controller
             $siswa->poin = max(0, $siswa->poin + $request->jumlah);
             $siswa->save();
 
+            // Proses Upload Foto jika ada
+            $fotoPath = null;
+            if ($request->hasFile('foto_bukti')) {
+                $file = $request->file('foto_bukti');
+                $filename = time() . '_' . $siswa->nisn . '.' . $file->getClientOriginalExtension();
+                // Simpan ke folder public/storage/bukti_pelanggaran
+                $fotoPath = $file->storeAs('bukti_pelanggaran', $filename, 'public');
+            }
+
             // Catat log pelanggarannya ke database riwayat_poin
             $riwayat = RiwayatPoin::create([
                 'nisn' => $siswa->nisn,
@@ -79,7 +89,8 @@ class PoinController extends Controller
                 'jenis' => $request->jumlah > 0 ? 'Tambah' : 'Kurang',
                 'jumlah' => abs($request->jumlah),
                 'ket' => $request->ket,
-                'waktu' => now(), // Menyimpan waktu otomatis dari server
+                'foto_bukti' => $fotoPath, // <--- Simpan path foto
+                'waktu' => now(),
             ]);
 
             $message = $siswa->poin >= 100
@@ -129,13 +140,26 @@ class PoinController extends Controller
         return response()->json(['success' => true, 'message' => 'Semua riwayat berhasil dihapus.']);
     }
 
-    // 7. Ambil Riwayat Spesifik Berdasarkan NISN (Untuk Modal/View Detail di Dashboard)
-    public function getRiwayatApi($nisn)
+    // ========================================================
+    // 7. API Khusus Orang Tua: Ambil Data Riwayat Berdasarkan NISN
+    // ========================================================
+    public function getRiwayatByNisn($nisn)
     {
-        $riwayat = RiwayatPoin::where('nisn', $nisn)
-            ->orderBy('waktu', 'desc')
-            ->get();
+        try {
+            // Mengambil riwayat poin berdasarkan NISN, diurutkan dari yang paling baru
+            $riwayat = \App\Models\RiwayatPoin::where('nisn', $nisn)
+                ->orderBy('waktu', 'desc')
+                ->get();
 
-        return response()->json($riwayat);
+            return response()->json([
+                'success' => true,
+                'data' => $riwayat
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data riwayat'
+            ], 500);
+        }
     }
 }

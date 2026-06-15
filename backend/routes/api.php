@@ -53,4 +53,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pelanggaran', [PelanggaranController::class, 'index']);
     Route::get('/pelanggaran/{id}', [PelanggaranController::class, 'show']);
 });
-

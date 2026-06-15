@@ -229,7 +229,19 @@
                             @forelse($dataSiswa ?? [] as $siswa)
                                 <tr class="hover:bg-gray-50 transition">
                                     <td class="py-5 pl-6 text-gray-500 font-medium">{{ $siswa->nisn }}</td>
-                                    <td class="py-5 font-bold text-gray-700">{{ $siswa->nama }}</td>
+                                    <td class="py-5 font-bold text-gray-700">
+                                        <div class="flex items-center gap-3">
+                                            @if ($siswa->photo)
+                                                <img src="{{ asset('storage/' . $siswa->photo) }}"
+                                                    class="w-8 h-8 rounded-full object-cover shadow-sm">
+                                            @else
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold">
+                                                    {{ substr($siswa->nama, 0, 1) }}</div>
+                                            @endif
+                                            <span>{{ $siswa->nama }}</span>
+                                        </div>
+                                    </td>
                                     <td class="py-5 text-center font-bold text-[#10b981]">{{ $siswa->kelas ?? '-' }}
                                     </td>
                                     <td class="py-5 text-center text-gray-500">{{ $siswa->kontak_ortu ?? '-' }}</td>
@@ -249,10 +261,11 @@
                                         @endif
                                     </td>
                                     <td class="py-5 pr-6 text-right">
-                                        <!-- Tombol Edit dgn Custom Data Attr -->
+                                        <!-- Tombol Edit dgn Custom Data Attr (Ditambahkan Alamat dan Ortu) -->
                                         <button onclick="openEditSiswaModal(this)" data-nisn="{{ $siswa->nisn }}"
                                             data-nama="{{ $siswa->nama }}" data-jk="{{ $siswa->jk }}"
                                             data-kelas="{{ $siswa->kelas }}" data-kontak="{{ $siswa->kontak_ortu }}"
+                                            data-alamat="{{ $siswa->alamat }}" data-ortu="{{ $siswa->ortu_id }}"
                                             class="text-blue-500 hover:text-blue-700 mx-1 transition p-2 bg-blue-50 rounded-lg hover:bg-blue-100"
                                             title="Edit">
                                             <i class="fas fa-edit"></i>
@@ -437,7 +450,7 @@
                 class="flex flex-col items-center">
                 @csrf
                 <div class="w-full mb-6">
-                    <input type="file" name="file" accept=".xlsx, .xls" required
+                    <input type="file" name="file_excel" accept=".xlsx, .xls" required
                         class="block w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 border border-gray-200 rounded-xl cursor-pointer">
                 </div>
                 <div class="flex justify-center gap-3 w-full">
@@ -453,7 +466,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MODAL TAMBAH SISWA -->
+    <!-- MODAL TAMBAH SISWA (Diperbarui dengan Alamat, Foto, dan Ortu) -->
     <!-- ============================================== -->
     <div id="addSiswaModal"
         class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm">
@@ -464,7 +477,8 @@
                 <button onclick="closeModals()"
                     class="text-white hover:text-gray-200 text-xl font-bold">&times;</button>
             </div>
-            <form action="{{ route('admin.siswa.store') }}" method="POST" class="p-6">
+            <form action="{{ route('admin.siswa.store') }}" method="POST" enctype="multipart/form-data"
+                class="p-6">
                 @csrf
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
@@ -503,12 +517,36 @@
                         </select>
                     </div>
 
-                    <div class="col-span-2">
+                    <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Kontak Orang Tua / Wali (No.
                             WA)</label>
                         <input type="text" name="kontak_ortu"
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981]"
                             placeholder="Contoh: 08123456789">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Alamat (Opsional)</label>
+                        <input type="text" name="alamat"
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981]"
+                            placeholder="Contoh: Jl. Mawar No. 2">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Akun Orang Tua Terhubung</label>
+                        <select name="ortu_id"
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] appearance-none bg-white">
+                            <option value="">-- Belum ada / Pilih Ortu --</option>
+                            @foreach ($daftarOrtu ?? [] as $ortu)
+                                <option value="{{ $ortu->id }}">{{ $ortu->name }} ({{ $ortu->email }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="text-[9px] text-gray-400 mt-1">Data akun wali murid terdaftar.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Foto Profil Siswa</label>
+                        <input type="file" name="photo" accept="image/*"
+                            class="w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 border border-gray-200 rounded-xl cursor-pointer">
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
@@ -523,7 +561,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MODAL EDIT SISWA -->
+    <!-- MODAL EDIT SISWA (Diperbarui dengan Alamat, Foto, dan Ortu) -->
     <!-- ============================================== -->
     <div id="editSiswaModal"
         class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm">
@@ -534,7 +572,7 @@
                 <button onclick="closeModals()"
                     class="text-white hover:text-gray-200 text-xl font-bold">&times;</button>
             </div>
-            <form id="editSiswaForm" method="POST" class="p-6">
+            <form id="editSiswaForm" method="POST" enctype="multipart/form-data" class="p-6">
                 @csrf
                 @method('PUT')
                 <div class="grid grid-cols-2 gap-4 mb-4">
@@ -572,11 +610,33 @@
                         </select>
                     </div>
 
-                    <div class="col-span-2">
+                    <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Kontak Orang Tua / Wali (No.
                             WA)</label>
                         <input type="text" name="kontak_ortu" id="edit_kontak_ortu"
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Alamat (Opsional)</label>
+                        <input type="text" name="alamat" id="edit_alamat"
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Akun Orang Tua Terhubung</label>
+                        <select name="ortu_id" id="edit_ortu_id"
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none bg-white">
+                            <option value="">-- Tidak ada --</option>
+                            @foreach ($daftarOrtu ?? [] as $ortu)
+                                <option value="{{ $ortu->id }}">{{ $ortu->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Ganti Foto Profil</label>
+                        <input type="file" name="photo" id="edit_photo" accept="image/*"
+                            class="w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-200 rounded-xl cursor-pointer">
+                        <p class="text-[9px] text-gray-400 mt-1">*Kosongkan jika tidak ingin mengubah foto.</p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
@@ -705,6 +765,9 @@
             let jk = btn.getAttribute('data-jk');
             let kelas = btn.getAttribute('data-kelas');
             let kontak = btn.getAttribute('data-kontak');
+            // Data baru dari database:
+            let alamat = btn.getAttribute('data-alamat');
+            let ortu = btn.getAttribute('data-ortu');
 
             // Gunakan metode replace agar rute Laravel akurat
             let actionUrl = "{{ route('admin.siswa.update', ':nisn') }}".replace(':nisn', nisn);
@@ -715,6 +778,11 @@
             document.getElementById('edit_jk').value = jk || '';
             document.getElementById('edit_kelas').value = kelas || '';
             document.getElementById('edit_kontak_ortu').value = kontak || '';
+            // Isi input baru
+            document.getElementById('edit_alamat').value = alamat || '';
+            document.getElementById('edit_ortu_id').value = ortu || '';
+            // Kosongkan file foto saat mengedit (karena alasan keamanan browser)
+            document.getElementById('edit_photo').value = '';
         }
 
         function openDeleteSiswaModal(btn) {

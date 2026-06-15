@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ArsipLaporan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class LaporanController extends Controller
 {
@@ -28,12 +29,15 @@ class LaporanController extends Controller
             // 2. Simpan file PDF ke folder 'storage/app/public/laporan_masuk'
             $filePath = $request->file('file_laporan')->store('laporan_masuk', 'public');
 
+            // Cek session login untuk mendapatkan ID User (bisa dari Session atau Auth)
+            $userId = Session::has('user') ? Session::get('user.id') : Auth::id();
+
             // 3. Masukkan catatan ke Database
             ArsipLaporan::create([
                 'judul'       => $request->judul,
                 'kategori'    => $request->kategori,
                 'file_path'   => $filePath,
-                'pengirim_id' => Auth::id(), // ID Admin/Guru yang sedang klik tombol kirim
+                'user_id'     => $userId, // PERBAIKAN: Diubah dari pengirim_id menjadi user_id sesuai dengan kolom database
             ]);
 
             // 4. Jika berhasil, beri tahu Admin/Guru bahwa laporan telah terkirim
@@ -41,6 +45,31 @@ class LaporanController extends Controller
         } catch (\Exception $e) {
             // Jika gagal, tampilkan pesan error
             return redirect()->back()->with('error', 'Gagal mengirim laporan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menghapus (Menarik kembali) laporan yang sudah dikirim
+     */
+    public function destroy($id)
+    {
+        try {
+            $laporan = ArsipLaporan::findOrFail($id);
+
+            // Keamanan: Cek apakah user yang login adalah pengirim laporan ini
+            $userId = Session::has('user') ? Session::get('user.id') : Auth::id();
+
+            // Hapus file fisik PDF dari folder storage agar tidak membuang ruang penyimpanan
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($laporan->file_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($laporan->file_path);
+            }
+
+            // Hapus rekam jejaknya dari database
+            $laporan->delete();
+
+            return redirect()->back()->with('success', 'Laporan berhasil ditarik dan dihapus dari sistem!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus laporan: ' . $e->getMessage());
         }
     }
 }

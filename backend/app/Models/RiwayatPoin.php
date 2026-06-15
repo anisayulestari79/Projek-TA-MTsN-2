@@ -18,6 +18,7 @@ class RiwayatPoin extends Model
         'jenis',
         'jumlah',
         'ket',
+        'foto_bukti',
         'waktu',
     ];
 

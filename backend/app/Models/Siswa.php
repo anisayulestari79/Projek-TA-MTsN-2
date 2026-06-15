@@ -16,12 +16,13 @@ class Siswa extends Model
     protected $fillable = [
         'nisn',
         'nama',
-        'jk',            // <-- DITAMBAHKAN: Agar Jenis Kelamin bisa tersimpan
+        'jk',
         'kelas',
-        'kontak_ortu',   // <-- DITAMBAHKAN: Agar No WA Ortu bisa tersimpan
+        'kontak_ortu',
         'poin',
-        'photo',         // <-- DITAMBAHKAN: Agar foto profil (jika ada) bisa tersimpan
-        'ortu_id',       // Kolom asing (Foreign Key) wajib didaftarkan di sini agar bisa diisi saat register
+        'photo',
+        'alamat',
+        'ortu_id',
     ];
 
     /**
@@ -31,6 +32,11 @@ class Siswa extends Model
     public function orangTua()
     {
         return $this->belongsTo(User::class, 'ortu_id');
+    }
+
+    public function ortu()
+    {
+        return $this->belongsTo(User::class, 'ortu_id', 'id');
     }
 
     public function riwayatPoin() // Pastikan 'riwayatPoin' bukan 'RiwayatPoin' atau lainnya

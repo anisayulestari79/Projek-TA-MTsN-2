@@ -2,129 +2,127 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
-    // 1. Fungsi untuk menampilkan halaman view profil (Blade)
-    public function index()
+    /**
+     * 1. Menampilkan halaman profil (Universal Web)
+     */
+    public function index(Request $request)
     {
-        // 1. Coba ambil dari Auth bawaan Laravel
         $user = Auth::user();
 
-        // 2. Jika Auth kosong, coba ambil dari Session manual (Sesuai dengan sistem Anda)
+        // Fallback ke Session manual jika Auth bawaan Laravel kosong
         if (!$user && session()->has('user')) {
-            // Ubah array session menjadi object agar tidak error saat dipanggil $user->role di Blade
             $user = (object) session('user');
         }
 
-        // 3. Jika MASIH kosong, berarti benar-benar belum login. Tendang kembali ke halaman utama!
+        // Jika belum login, tendang ke halaman login
         if (!$user) {
             return redirect('/')->with('error', 'Akses ditolak! Silakan login terlebih dahulu.');
         }
 
-        // Memanggil file view yang sudah Anda buat tadi
-        return view('profile.index', compact('user'));
+        // Memanggil file view profil universal
+        return view('dashboard.profile.index', compact('user'));
     }
 
-    // 2. Fungsi untuk menangani update (bisa untuk Web dan API)
+    /**
+     * 2. Memproses update data profil (Mendukung Web Biasa & AJAX/API)
+     */
     public function update(Request $request)
     {
-        // Terapkan logika yang sama untuk update data
         $user = Auth::user();
 
         if (!$user && session()->has('user')) {
-            // Mengambil data user asli dari database berdasarkan ID di session
-            // Asumsi model Anda bernama User dan session menyimpan 'id'
-            $user = \App\Models\User::find(session('user')['id']);
+            $user = User::find(session('user')['id']);
         }
 
+        // Jika user tidak ditemukan
         if (!$user) {
+            if ($request->wantsJson() || $request->is('api/*') || $request->header('Accept') == 'application/json') {
+                return response()->json(['success' => false, 'message' => 'Sesi habis, silakan login ulang.'], 401);
+            }
             return redirect('/')->with('error', 'Sesi Anda telah habis. Silakan login kembali.');
         }
 
-        // Validasi: Perhatikan bahwa 'photo' sekarang memvalidasi file gambar (image/mimes/max)
+        // Validasi input
         $validator = Validator::make($request->all(), [
-            'name'     => 'sometimes|required|string|max:255',
-            'gender'   => 'nullable|string',
-            'phone'    => 'nullable|string',
-            'photo'    => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // File maksimal 2MB
-            'password' => 'nullable|string|min:6',
+            'name'      => 'sometimes|required|string|max:255',
+            'gender'    => 'nullable|string',
+            'phone'     => 'nullable|string|max:20',
+            'pekerjaan' => 'nullable|string|max:255',
+            'alamat'    => 'nullable|string',
+            'photo'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'password'  => 'nullable|string|min:6',
         ]);
 
         // Jika validasi gagal
         if ($validator->fails()) {
-            // Jika request dari API (Postman/Mobile), kembalikan JSON
-            if ($request->expectsJson()) {
+            if ($request->wantsJson() || $request->is('api/*') || $request->header('Accept') == 'application/json') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validasi gagal',
+                    'message' => 'Validasi gagal, periksa isian Anda.',
                     'errors'  => $validator->errors()
                 ], 422);
             }
-            // Jika request dari Web (Browser), kembalikan ke halaman sebelumnya beserta error
-            return back()->withErrors($validator)->withInput();
+            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Gagal memperbarui profil. Periksa isian Anda.');
         }
 
+        // Persiapkan data yang akan diupdate
         $updateData = [];
 
-        if ($request->filled('name')) {
-            $updateData['name'] = $request->name;
-        }
-
-        if ($request->filled('gender')) {
-            // Menyimpan ke kolom 'jk' (sesuai database Anda) atau 'gender'
-            // Silakan sesuaikan nama kolom ini jika di database Anda namanya 'jk'
-            $updateData['jk'] = $request->gender;
-        }
-
-        if ($request->filled('phone')) {
-            $updateData['phone'] = $request->phone;
-        }
+        if ($request->filled('name')) $updateData['name'] = $request->name;
+        if ($request->filled('gender')) $updateData['gender'] = $request->gender;
+        if ($request->filled('phone')) $updateData['phone'] = $request->phone;
+        if ($request->filled('pekerjaan')) $updateData['pekerjaan'] = $request->pekerjaan;
+        if ($request->filled('alamat')) $updateData['alamat'] = $request->alamat;
 
         if ($request->filled('password')) {
             $updateData['password'] = Hash::make($request->password);
         }
 
-        // TANGANI UPLOAD FILE FOTO
+        // Proses Upload Foto Baru
         if ($request->hasFile('photo')) {
-            // Hapus foto lama jika ada dan bukan bawaan sistem
-            if ($user->photo && Storage::disk('public')->exists($user->photo)) {
+            // Hapus foto lama jika ada (dan pastikan bukan URL default awalan http)
+            if ($user->photo && !str_starts_with($user->photo, 'http') && Storage::disk('public')->exists($user->photo)) {
                 Storage::disk('public')->delete($user->photo);
             }
 
-            // Simpan foto baru ke folder storage/app/public/profiles
+            // Simpan foto baru ke folder profiles
             $path = $request->file('photo')->store('profiles', 'public');
             $updateData['photo'] = $path;
         }
 
-        // Eksekusi update ke database
+        // Eksekusi Simpan ke Database
         $user->update($updateData);
 
-        // Perbarui session manual jika Anda menggunakannya
+        // Perbarui Session manual jika menggunakan sistem session array
         if (session()->has('user')) {
             session(['user' => $user->toArray()]);
         }
 
-        // Jika request dari API (Postman/Mobile), kembalikan JSON
-        if ($request->expectsJson()) {
+        // RESPON AJAX/API (Jika form dikirim dari Modal Dasbor Ortu menggunakan Fetch JS)
+        if ($request->wantsJson() || $request->is('api/*') || $request->header('Accept') == 'application/json') {
             return response()->json([
                 'success' => true,
-                'message' => 'Profil berhasil diperbarui',
+                'message' => 'Profil berhasil diperbarui!',
                 'data'    => $user
             ]);
         }
 
-        // Jika request dari Web (Browser), reload halaman dengan pesan sukses
-        return back()->with('success', 'Profil Anda berhasil diperbarui!');
+        // RESPON WEB (Jika form dikirim dari Halaman Universal Profil)
+        return redirect()->back()->with('success', 'Profil Anda berhasil diperbarui!');
     }
 
-    // Fungsi show untuk API (tetap dipertahankan)
+    /**
+     * 3. Menampilkan data user spesifik (Khusus Request API GET)
+     */
     public function show(Request $request)
     {
         return response()->json([

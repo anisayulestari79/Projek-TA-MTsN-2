@@ -4,52 +4,71 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ArsipLaporan;
+use App\Models\RiwayatPoin;
+use App\Models\Siswa;
+use App\Models\Kelas;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class KamadController extends Controller
 {
+    /**
+     * Menampilkan halaman Laporan Masuk (File PDF dari Admin/Guru BK)
+     */
     public function laporanMasuk(Request $request)
     {
-        // Mengambil data user yang sedang login (Kamad)
-        $user = Auth::user();
+        // Ambil data user yang sedang login (Kamad)
+        $user = Session::has('user') ? Session::get('user') : Auth::user();
 
-        // Mengambil semua daftar laporan, diurutkan dari yang terbaru, 
-        // beserta data relasi pengirimnya.
-        $listLaporan = ArsipLaporan::with('pengirim')->latest()->get();
+        // 💡 PERBAIKAN: Menggunakan 'user' BUKAN 'pengirim'
+        $query = ArsipLaporan::with('user')->orderBy('created_at', 'desc');
 
-        // Mengirim data ke file view blade
+        // Fitur filter kategori PDF (jika Kepala Madrasah ingin menyaring)
+        if ($request->has('kategori') && $request->kategori != '') {
+            $query->where('kategori', $request->kategori);
+        }
+
+        $listLaporan = $query->paginate(10)->withQueryString();
+
         return view('kamad.kamad-laporan', compact('user', 'listLaporan'));
     }
 
+    /**
+     * Menampilkan halaman Rekap Poin Keseluruhan
+     */
     public function poinKeseluruhan(Request $request)
     {
-        // 1. Ambil pilihan filter dari form (jika ada)
-        $filterKelas = $request->input('kelas');
+        $user = Session::has('user') ? Session::get('user') : Auth::user();
 
-        // 2. Buat kerangka query untuk Siswa
-        $query = \App\Models\Siswa::query();
+        $bulanFilter = $request->input('bulan', date('m'));
+        $tahunFilter = $request->input('tahun', date('Y'));
+        $kelasFilter = $request->input('kelas', 'Semua');
 
-        // 3. Jika Kamad memilih kelas tertentu, filter datanya
-        if ($filterKelas) {
-            $query->where('kelas', $filterKelas);
+        $query = RiwayatPoin::whereMonth('waktu', $bulanFilter)
+            ->whereYear('waktu', $tahunFilter)
+            ->orderBy('waktu', 'desc');
+
+        if ($kelasFilter !== 'Semua') {
+            $query->where('kelas', $kelasFilter);
         }
 
-        // 4. Ambil datanya dan urutkan berdasarkan poin tertinggi
-        $siswaPelanggaran = $query->orderBy('poin', 'desc')->get();
+        $totalKasusLaporan = $query->count();
+        $laporan = $query->paginate(15)->withQueryString();
 
-        // 5. MENGGENERATE DAFTAR KELAS A SAMPAI K SECARA OTOMATIS
-        $daftarKelas = [];
-        $tingkatan = ['VII', 'VIII', 'IX']; // Kelas 7, 8, dan 9 (MTs)
-        $abjad = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
-
-        foreach ($tingkatan as $tingkat) {
-            foreach ($abjad as $huruf) {
-                // Menghasilkan format "VII.A", "VII.B", sesuai dengan database Anda
-                $daftarKelas[] = $tingkat . '.' . $huruf;
-            }
+        try {
+            $kelasList = Kelas::pluck('nama_kelas');
+        } catch (\Exception $e) {
+            $kelasList = Siswa::select('kelas')->distinct()->pluck('kelas')->filter()->sort()->values();
         }
 
-        // 6. Kirim data ke tampilan
-        return view('kamad.kamad-poin', compact('siswaPelanggaran', 'daftarKelas', 'filterKelas'));
+        return view('kamad.kamad-poin', compact(
+            'user',
+            'laporan',
+            'totalKasusLaporan',
+            'bulanFilter',
+            'tahunFilter',
+            'kelasFilter',
+            'kelasList'
+        ));
     }
 }

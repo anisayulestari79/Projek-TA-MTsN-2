@@ -19,6 +19,11 @@ use App\Http\Controllers\OrtuAuthController;
 // =======================================================
 Route::get('/', [PageController::class, 'index'])->name('index');
 
+// Fallback rute 'login' untuk mengatasi error merah "Route [login] not defined"
+Route::get('/login', function () {
+    return redirect('/')->with('error', 'Sesi Anda telah habis atau akses ditolak. Silakan login kembali melalui halaman utama.');
+})->name('login');
+
 // =======================================================
 // 2. AUTHENTICATION ROUTES (Login & Register)
 // =======================================================
@@ -69,6 +74,12 @@ Route::middleware('web')->group(function () {
     Route::post('/guru/konsultasi/kirim', [ConsultationController::class, 'kirimDariBK'])->name('guru.konsultasi.kirim');
     Route::post('/guru/konsultasi/{id}/balas', [ConsultationController::class, 'balasDariBK'])->name('guru.konsultasi.balas');
 
+    Route::get('/guru/cetak-laporan', [DashboardController::class, 'cetakLaporan'])->name('guru.cetak-laporan');
+
+    // 👇 RUTE LAPORAN (Tersedia untuk Guru & Admin)
+    Route::post('/laporan/kirim', [LaporanController::class, 'store'])->name('laporan.kirim');
+    Route::delete('/laporan/hapus/{id}', [App\Http\Controllers\LaporanController::class, 'destroy'])->name('laporan.hapus');
+
     // 👇 NAMA ROUTE DISERAGAMKAN MENJADI 'kamad.dashboard'
     Route::get('/kamad/dashboard', [DashboardController::class, 'kamad'])->name('kamad.kamad-dashboard');
 
@@ -80,6 +91,12 @@ Route::middleware('web')->group(function () {
     // 👇 ROUTE PROFIL DITAMBAHKAN KEMBALI
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/api/profile', [ProfileController::class, 'show'])->name('profile.show');
+
+    // =======================================================
+    // 👇 API RIWAYAT POIN UNTUK ORANG TUA DITAMBAHKAN DI SINI
+    // =======================================================
+    Route::get('/riwayat-poin/api/{nisn}', [PoinController::class, 'getRiwayatByNisn'])->name('riwayat-poin.api');
 
     // =======================================================
     // 4. RUTE KHUSUS ADMIN (Prefix: /admin, Name: admin.)
@@ -104,6 +121,7 @@ Route::middleware('web')->group(function () {
         Route::get('/konsultasi/{id}', [ConsultationController::class, 'show'])->name('konsultasi.show');
         Route::put('/konsultasi/{id}/reply', [ConsultationController::class, 'reply'])->name('konsultasi.reply');
         Route::patch('/konsultasi/{id}/complete', [ConsultationController::class, 'markAsComplete'])->name('konsultasi.complete');
+        Route::post('/laporan/kirim', [LaporanController::class, 'store'])->name('laporan.kirim');
 
         // --- DATA POIN SISWA ---
         Route::get('/poin', function () {
@@ -121,9 +139,6 @@ Route::middleware('web')->group(function () {
         Route::delete('/poin/riwayat/{id}', [PoinController::class, 'deleteRiwayat'])->name('poin.deleteRiwayat');
         Route::delete('/poin/riwayat-clear', [PoinController::class, 'deleteAllRiwayat'])->name('poin.deleteAllRiwayat');
         Route::get('/riwayat/api/{nisn}', [PoinController::class, 'getRiwayatApi'])->name('riwayat.api');
-
-        // --- KIRIM LAPORAN KE KAMAD ---
-        Route::post('/laporan/kirim', [LaporanController::class, 'store'])->name('laporan.kirim');
 
         // --- AUDIT LOG ---
         Route::get('/audit-log', [DashboardController::class, 'auditLog'])->name('audit.index');

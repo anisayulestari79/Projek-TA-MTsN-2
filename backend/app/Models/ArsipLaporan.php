@@ -9,16 +9,19 @@ class ArsipLaporan extends Model
 {
     use HasFactory;
 
+    // Menghubungkan ke tabel yang ada di gambar Anda
+    protected $table = 'arsip_laporans';
+
     protected $fillable = [
         'judul',
         'kategori',
         'file_path',
-        'user_id',
+        'user_id'
     ];
 
-    // Relasi langsung ke tabel User Anda
+    // Relasi untuk mengetahui siapa yang mengunggah laporan
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

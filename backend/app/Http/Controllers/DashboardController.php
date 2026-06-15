@@ -45,33 +45,31 @@ class DashboardController extends Controller
         }
 
         // ========================================================
-        // TAMBAHAN DATA UNTUK GRAFIK & TABEL DI ADMIN DASHBOARD
+        // DATA UNTUK GRAFIK & TABEL DI ADMIN DASHBOARD
         // ========================================================
 
-        // 1. Data Monitoring Sanksi (Terhubung langsung ke tabel siswa berdasarkan poin)
+        // 1. Data Monitoring Sanksi
         $countPanggilan1 = Siswa::whereBetween('poin', [25, 49])->count();
         $countPanggilan2 = Siswa::whereBetween('poin', [50, 99])->count();
         $countDropOut    = Siswa::where('poin', '>=', 100)->count();
 
-        // 2. Data Grafik Diagram Batang (DATA ASLI PER BULAN TAHUN INI)
+        // 2. Data Grafik Diagram Batang
         $currentYear = Carbon::now()->year;
         $chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
         $chartData   = [];
 
-        // Looping dari bulan 1 (Januari) sampai 12 (Desember)
         for ($month = 1; $month <= 12; $month++) {
-            $count = RiwayatPoin::whereYear('waktu', $currentYear)
+            $count = \App\Models\RiwayatPoin::whereYear('waktu', $currentYear)
                 ->whereMonth('waktu', $month)
                 ->where('jenis', 'Tambah')
                 ->count();
-
             $chartData[] = $count;
         }
 
-        // 3. Data Tabel Poin Keseluruhan (Mengambil 10 siswa dengan poin tertinggi)
-        $siswaPelanggaran = Siswa::orderBy('poin', 'desc')->take(10)->get();
+        // 3. Ambil data siswa dengan poin tertinggi untuk di tabel dashboard
+        $siswaPelanggaran = Siswa::where('poin', '>', 0)->orderBy('poin', 'desc')->take(10)->get();
 
-        // Mengirimkan semua data di atas ke view admin.admin-dashboard menggunakan compact()
+        // PASTIKAN MENGARAH KE VIEW ADMIN, BUKAN GURU
         return view('admin.admin-dashboard', compact(
             'user',
             'countPanggilan1',
@@ -91,7 +89,7 @@ class DashboardController extends Controller
 
         $sessionUser = Session::get('user');
 
-        if (!in_array($sessionUser['role'], ['guru', 'bk'])) {
+        if (!in_array($sessionUser['role'], ['guru', 'bk', 'guru_bk'])) {
             return redirect()->route('index')->with('error', 'Akses ditolak');
         }
 
@@ -119,8 +117,8 @@ class DashboardController extends Controller
         // TAMBAHAN DATA UNTUK DASHBOARD GURU
         // ========================================================
 
-        // 1. Ambil Data Siswa Langsung dari Database
-        $dataSiswa = \App\Models\Siswa::orderBy('nama', 'asc')->get();
+        // 1. Ambil SEMUA data siswa untuk menu "Data Master Siswa" (Tanpa filter kelas binaan)
+        $dataSiswa = \App\Models\Siswa::with('ortu')->orderBy('kelas', 'asc')->orderBy('nama', 'asc')->get();
         $totalSiswa = $dataSiswa->count();
 
         // 2. Ambil Referensi Pelanggaran
@@ -142,13 +140,13 @@ class DashboardController extends Controller
         $siswaBinaan = collect([]);
         $konsultasi = collect([]);
 
-        if ($user['role'] === 'bk' && $guruDb && $guruDb->kelas_binaan) {
-            // Karena kelas_binaan disimpan sebagai text JSON (misal: '["IX A", "IX B"]'), kita decode menjadi Array
+        // Cek apakah yang login adalah BK dan memiliki kelas binaan
+        if (in_array($user['role'], ['bk', 'guru_bk']) && $guruDb && $guruDb->kelas_binaan) {
             $kelasArray = json_decode($guruDb->kelas_binaan, true);
 
             if (is_array($kelasArray) && count($kelasArray) > 0) {
-                // Ambil daftar siswa yang berada di kelas binaan BK ini
-                $siswaBinaan = \App\Models\Siswa::whereIn('kelas', $kelasArray)->orderBy('nama', 'asc')->get();
+                // HANYA Ambil Siswa Binaan untuk menu "Data Kelas Binaan"
+                $siswaBinaan = \App\Models\Siswa::with('ortu')->whereIn('kelas', $kelasArray)->orderBy('nama', 'asc')->get();
 
                 // Ambil daftar konsultasi HANYA untuk siswa-siswa binaan tersebut
                 $siswaIds = $siswaBinaan->pluck('id')->toArray();
@@ -159,8 +157,13 @@ class DashboardController extends Controller
             }
         }
 
+        // Mengambil data Riwayat Laporan yang dikirim oleh Guru BK yang sedang login
+        $riwayatLaporan = \App\Models\ArsipLaporan::where('user_id', $user['id'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         // Tampilkan Dashboard Guru/BK dengan data yang sudah di-filter
-        return view('dashboard.guru', compact(
+        return view('guru.dashboard', compact(
             'user',
             'dataSiswa',
             'totalSiswa',
@@ -168,10 +171,44 @@ class DashboardController extends Controller
             'daftarKelas',
             'inputHariIni',
             'siswaBinaan',
-            'konsultasi'
+            'konsultasi',
+            'riwayatLaporan'
         ));
     }
 
+    // ========================================================
+    // FUNGSI UNTUK CETAK LAPORAN FORMAL (GURU/BK)
+    // ========================================================
+    public function cetakLaporan(Request $request)
+    {
+        if (!Session::has('user')) {
+            return redirect()->route('guru.login')->with('error', 'Silakan login terlebih dahulu');
+        }
+
+        $user = Session::get('user');
+        $guruDb = \App\Models\Guru::where('nip', $user['nip'])->first();
+
+        $querySiswa = \App\Models\Siswa::with('ortu')->orderBy('kelas', 'asc')->orderBy('nama', 'asc');
+
+        // Menangkap parameter 'type' dari URL (all atau binaan)
+        $type = $request->query('type', 'binaan');
+        $judulKategori = 'Kelas Binaan';
+
+        // Jika type adalah binaan, filter data berdasarkan kelas binaan Guru BK
+        if ($type === 'binaan' && in_array($user['role'], ['bk', 'guru_bk']) && $guruDb && $guruDb->kelas_binaan) {
+            $kelasArray = json_decode($guruDb->kelas_binaan, true);
+            if (is_array($kelasArray) && count($kelasArray) > 0) {
+                $querySiswa->whereIn('kelas', $kelasArray);
+            }
+        } elseif ($type === 'all') {
+            // Jika type adalah 'all', judul kategori diubah, kueri tetap menarik semua siswa
+            $judulKategori = 'Seluruh Siswa Madrasah';
+        }
+
+        $dataSiswa = $querySiswa->get();
+
+        return view('guru.cetak-laporan', compact('user', 'dataSiswa', 'judulKategori'));
+    }
 
     // ========================================================
     // FUNGSI UNTUK MENAMPILKAN HALAMAN AUDIT LOG
