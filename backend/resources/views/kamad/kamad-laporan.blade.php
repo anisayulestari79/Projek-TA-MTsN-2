@@ -86,15 +86,20 @@
                         <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Akses: Pimpinan</p>
                     </div>
 
-                    <!-- Foto Profil Terhubung dengan Auth -->
-                    @if (Auth::check() && Auth::user()->photo)
-                        <img src="{{ str_starts_with(Auth::user()->photo, 'http') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo) }}"
-                            class="w-10 h-10 rounded-full border-2 border-green-50 object-cover shadow-sm"
-                            alt="Profile">
-                    @else
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Kepala Madrasah') }}&background=10b981&color=fff"
-                            class="w-10 h-10 rounded-full border-2 border-green-50 shadow-sm" alt="Profile">
-                    @endif
+                    @php
+                        $avatarUrl =
+                            'https://ui-avatars.com/api/?name=' .
+                            urlencode(Auth::user()->name ?? 'Kepala Madrasah') .
+                            '&background=10b981&color=fff';
+                        $photoPath = Auth::user()->photo
+                            ? (str_starts_with(Auth::user()->photo, 'http')
+                                ? Auth::user()->photo
+                                : asset('storage/' . Auth::user()->photo))
+                            : $avatarUrl;
+                    @endphp
+
+                    <img src="{{ $photoPath }}" onerror="this.src='{{ $avatarUrl }}'"
+                        class="w-10 h-10 rounded-full border-2 border-green-50 object-cover shadow-sm" alt="Profile">
 
                     <i class="fas fa-chevron-down text-gray-400 text-xs ml-1"></i>
                 </button>
@@ -103,12 +108,11 @@
                 <div id="profileDropdownMenu"
                     class="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95">
                     <div class="py-2">
-                        <!-- UBAH JADI FUNGSI ONCLICK SHOWVIEW -->
-                        <button type="button"
-                            onclick="showView('profile'); document.getElementById('profileDropdownMenu').classList.add('hidden');"
-                            class="w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
+                        <!-- Mengarah ke file index profil mandiri Anda -->
+                        <a href="{{ route('profile.index') }}"
+                            class="block w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
                             <i class="fas fa-user-edit"></i> Edit Profil
-                        </button>
+                        </a>
                         <div class="border-t border-gray-100 my-1"></div>
                         <form action="{{ route('logout') }}" method="POST" class="w-full">
                             @csrf

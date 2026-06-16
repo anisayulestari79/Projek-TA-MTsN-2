@@ -29,7 +29,7 @@ class ProfileController extends Controller
         }
 
         // Memanggil file view profil universal
-        return view('dashboard.profile.index', compact('user'));
+        return view('profile.index', compact('user'));
     }
 
     /**

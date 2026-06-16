@@ -466,7 +466,7 @@
                         <div class="text-left">
                             <span
                                 class="font-black text-gray-800 text-base md:text-lg uppercase tracking-tighter block leading-tight">MTsN
-                                2 BJM</span>
+                                2 Kota Banjarmasin</span>
                             <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Kementerian
                                 Agama RI</span>
                         </div>

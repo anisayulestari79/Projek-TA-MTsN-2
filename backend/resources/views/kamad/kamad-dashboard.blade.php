@@ -78,11 +78,11 @@
                     class="flex items-center gap-4 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition focus:outline-none">
                     <div class="text-right">
                         <p class="text-xs font-black text-[#10b981] uppercase leading-none">
-                            {{ Auth::user()->name ?? 'Kepala Madrasah' }}</p>
+                            {{ Auth::user()->name ?? 'Kepala Madrasah' }}
+                        </p>
                         <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Akses: Pimpinan</p>
                     </div>
 
-                    <!-- Foto Profil Terhubung dengan Auth & Fallback OnError -->
                     @php
                         $avatarUrl =
                             'https://ui-avatars.com/api/?name=' .
@@ -105,11 +105,11 @@
                 <div id="profileDropdownMenu"
                     class="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95">
                     <div class="py-2">
-                        <button type="button"
-                            onclick="showView('profile'); document.getElementById('profileDropdownMenu').classList.add('hidden');"
-                            class="w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
+                        <!-- Mengarah ke file index profil mandiri Anda -->
+                        <a href="{{ route('profile.index') }}"
+                            class="block w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
                             <i class="fas fa-user-edit"></i> Edit Profil
-                        </button>
+                        </a>
                         <div class="border-t border-gray-100 my-1"></div>
                         <form action="{{ route('logout') }}" method="POST" class="w-full">
                             @csrf

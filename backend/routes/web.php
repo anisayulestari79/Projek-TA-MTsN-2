@@ -18,6 +18,10 @@ use App\Http\Controllers\OrtuAuthController;
 // 1. PUBLIC ROUTES (Halaman Utama)
 // =======================================================
 Route::get('/', [PageController::class, 'index'])->name('index');
+Route::get('/landing-page', function () {
+    return view('index');
+});
+Route::redirect('/', '/landing-page');
 
 // Fallback rute 'login' untuk mengatasi error merah "Route [login] not defined"
 Route::get('/login', function () {
