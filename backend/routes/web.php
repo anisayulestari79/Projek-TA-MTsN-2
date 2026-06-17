@@ -119,6 +119,7 @@ Route::middleware('web')->group(function () {
         Route::post('/siswa/import', [SiswaController::class, 'importExcel'])->name('siswa.import');
         Route::put('/siswa/{nisn}', [SiswaController::class, 'update'])->name('siswa.update');
         Route::delete('/siswa/{nisn}', [SiswaController::class, 'destroy'])->name('siswa.destroy');
+        Route::post('/siswa/kenaikan-kelas', [App\Http\Controllers\Api\SiswaController::class, 'prosesKenaikanKelas'])->name('siswa.kenaikan');
 
         // --- DATA KONSULTASI BK ---
         Route::get('/konsultasi', [ConsultationController::class, 'index'])->name('konsultasi.index');

@@ -513,13 +513,34 @@
                                 jawab bimbingan Anda.</p>
                         </div>
 
-                        <!-- TOMBOL CETAK KELAS BINAAN (DIUBAH) -->
+                        <!-- TOMBOL CETAK KELAS BINAAN -->
                         <button onclick="cetakLaporanOtomatis('binaan')"
                             class="bg-[#10b981] text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-green-600 transition flex items-center gap-2 shadow-sm shadow-green-100 w-full md:w-auto justify-center md:justify-start">
                             <i class="fas fa-print"></i> Cetak Rekap Binaan
                         </button>
                     </div>
 
+                    <!-- Ekstraksi Filter Otomatis Berdasarkan Data Binaan -->
+                    @php
+                        $tingkatBinaan = [];
+                        $suffixBinaan = [];
+                        if (isset($siswaBinaan)) {
+                            foreach ($siswaBinaan as $sb) {
+                                // Memisahkan string kelas (Misal: "VII A" -> "VII" dan "A")
+                                $parts = explode(' ', str_replace('-', ' ', $sb->kelas));
+                                if (isset($parts[0]) && !in_array($parts[0], $tingkatBinaan)) {
+                                    $tingkatBinaan[] = $parts[0];
+                                }
+                                if (isset($parts[1]) && !in_array($parts[1], $suffixBinaan)) {
+                                    $suffixBinaan[] = $parts[1];
+                                }
+                            }
+                        }
+                        sort($tingkatBinaan);
+                        sort($suffixBinaan);
+                    @endphp
+
+                    <!-- FILTER RESPONSIVE DATA BINAAN -->
                     <div class="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6">
                         <div class="flex-1 relative">
                             <i class="fas fa-search absolute left-4 top-3.5 text-gray-300 text-xs"></i>
@@ -527,6 +548,26 @@
                                 placeholder="Cari Nama/NISN Siswa Binaan..."
                                 class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-medium focus:ring-2 focus:ring-green-100 outline-none transition"
                                 oninput="filterSiswaBinaan()">
+                        </div>
+                        <div class="w-full sm:w-32 md:w-40">
+                            <select id="filter-tingkat-binaan"
+                                class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer"
+                                onchange="filterSiswaBinaan()">
+                                <option value="">Semua Tingkat</option>
+                                @foreach ($tingkatBinaan as $tingkat)
+                                    <option value="{{ $tingkat }}">{{ $tingkat }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="w-full sm:w-32 md:w-40">
+                            <select id="filter-kelas-binaan"
+                                class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer"
+                                onchange="filterSiswaBinaan()">
+                                <option value="">Semua Kelas</option>
+                                @foreach ($suffixBinaan as $suffix)
+                                    <option value="{{ $suffix }}">{{ $suffix }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
@@ -610,14 +651,35 @@
                             akumulasi poin seluruh siswa madrasah.</p>
                     </div>
 
-                    <!-- TOMBOL CETAK SEMUA SISWA (DIUBAH) -->
-                    <button onclick="cetakLaporanOtomatis('all')"
-                        class="bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-blue-600 transition flex items-center gap-2 shadow-sm shadow-blue-100 w-full md:w-auto justify-center md:justify-start">
-                        <i class="fas fa-print"></i> Cetak Seluruh Data
-                    </button>
+                    <!-- TOMBOL CETAK SEMUA SISWA (HANYA MUNCUL JIKA GURU BK) -->
+                    @if (isset($user['role']) && in_array($user['role'], ['bk', 'guru_bk']))
+                        <button onclick="cetakLaporanOtomatis('all')"
+                            class="bg-blue-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-blue-600 transition flex items-center gap-2 shadow-sm shadow-blue-100 w-full md:w-auto justify-center md:justify-start">
+                            <i class="fas fa-print"></i> Cetak Seluruh Data
+                        </button>
+                    @endif
                 </div>
 
-                <!-- Filter Responsif -->
+                <!-- Ekstraksi Filter Otomatis Berdasarkan Database Kelas -->
+                @php
+                    $tingkatMaster = [];
+                    $suffixMaster = [];
+                    if (isset($daftarKelas)) {
+                        foreach ($daftarKelas as $dk) {
+                            $parts = explode(' ', str_replace('-', ' ', $dk));
+                            if (isset($parts[0]) && !in_array($parts[0], $tingkatMaster)) {
+                                $tingkatMaster[] = $parts[0];
+                            }
+                            if (isset($parts[1]) && !in_array($parts[1], $suffixMaster)) {
+                                $suffixMaster[] = $parts[1];
+                            }
+                        }
+                    }
+                    sort($suffixMaster); // Abjad A-Z (Otomatis mencakup A sampai K dst)
+                    // Tingkat (VII, VIII, IX) tidak di-sort ulang agar mengikuti urutan asli dari database (Romawi)
+                @endphp
+
+                <!-- Filter Responsif Data Master -->
                 <div class="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6">
                     <div class="flex-1 relative">
                         <i class="fas fa-search absolute left-4 top-3.5 text-gray-300 text-xs"></i>
@@ -625,13 +687,23 @@
                             class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-medium focus:ring-2 focus:ring-green-100 outline-none transition"
                             oninput="filterSiswa()">
                     </div>
-                    <div class="w-full sm:w-48 md:w-64">
+                    <div class="w-full sm:w-32 md:w-40">
+                        <select id="filter-tingkat-siswa"
+                            class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer"
+                            onchange="filterSiswa()">
+                            <option value="">Semua Tingkat</option>
+                            @foreach ($tingkatMaster as $tingkat)
+                                <option value="{{ $tingkat }}">Kelas {{ $tingkat }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="w-full sm:w-32 md:w-40">
                         <select id="filter-kelas-siswa"
                             class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer"
                             onchange="filterSiswa()">
                             <option value="">Semua Kelas</option>
-                            @foreach ($daftarKelas ?? [] as $kelas)
-                                <option value="{{ $kelas }}">{{ $kelas }}</option>
+                            @foreach ($suffixMaster as $suffix)
+                                <option value="{{ $suffix }}">{{ $suffix }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -755,7 +827,7 @@
                                         class="fas fa-user-graduate absolute left-3.5 md:left-4 top-3 md:top-3.5 text-gray-400 text-xs"></i>
                                     <select name="siswa_id" required
                                         class="w-full pl-9 md:pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition appearance-none">
-                                        <option value="">-- Pilih Siswa --</option>
+                                        <option value=""> Pilih Siswa </option>
                                         @foreach ($siswaBinaan ?? [] as $sb)
                                             <option value="{{ $sb->id }}">{{ $sb->nama }} (Kelas
                                                 {{ $sb->kelas }})</option>
@@ -1228,7 +1300,8 @@
             <h3 class="text-xl font-black text-gray-800 uppercase tracking-wider mb-2">Tarik Laporan?</h3>
             <p class="text-sm text-gray-600 mb-8 font-medium">Apakah Bapak/Ibu yakin ingin menarik kembali laporan ini?
                 <br><br> <span class="text-red-500 font-bold">File PDF laporan ini akan dihapus permanen dari sistem
-                    madrasah.</span></p>
+                    madrasah.</span>
+            </p>
 
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <button onclick="closeKonfirmasiTarik()"
@@ -1424,29 +1497,54 @@
             });
         };
 
+        // Filter untuk Data Master Siswa
         window.filterSiswa = function() {
             const searchTerm = document.getElementById('search-siswa')?.value.toLowerCase().trim() || '';
+            const tingkat = document.getElementById('filter-tingkat-siswa')?.value || '';
             const kelas = document.getElementById('filter-kelas-siswa')?.value || '';
+
             const rows = document.querySelectorAll('.row-data-siswa');
             rows.forEach(row => {
                 const nama = row.querySelector('.row-nama').innerText.toLowerCase();
                 const nisn = row.querySelector('.row-nisn').innerText.toLowerCase();
-                const rowKelas = row.getAttribute('data-kelas');
+                const rowKelas = row.getAttribute('data-kelas'); // Cth: "VII A" atau "VII-A"
+
+                // Pisahkan string kelas menjadi array untuk pengecekan akurat
+                const kelasArr = rowKelas.replace('-', ' ').split(' ');
+                const rowTingkat = kelasArr[0] || '';
+                const rowSuffix = kelasArr[1] || '';
+
                 const matchName = nama.includes(searchTerm) || nisn.includes(searchTerm);
-                const matchKelas = kelas === '' || rowKelas === kelas;
-                if (matchName && matchKelas) row.style.display = '';
+                const matchTingkat = tingkat === '' || rowTingkat === tingkat;
+                const matchKelas = kelas === '' || rowSuffix === kelas;
+
+                if (matchName && matchTingkat && matchKelas) row.style.display = '';
                 else row.style.display = 'none';
             });
         };
 
+        // Filter khusus Data Siswa Binaan
         window.filterSiswaBinaan = function() {
             const searchTerm = document.getElementById('search-siswa-binaan')?.value.toLowerCase().trim() || '';
+            const tingkat = document.getElementById('filter-tingkat-binaan')?.value || '';
+            const kelas = document.getElementById('filter-kelas-binaan')?.value || '';
+
             const rows = document.querySelectorAll('.row-data-binaan');
             rows.forEach(row => {
                 const nama = row.querySelector('.row-nama').innerText.toLowerCase();
                 const nisn = row.querySelector('.row-nisn').innerText.toLowerCase();
+                const rowKelas = row.getAttribute('data-kelas');
+
+                // Pisahkan string kelas menjadi array untuk pengecekan akurat
+                const kelasArr = rowKelas.replace('-', ' ').split(' ');
+                const rowTingkat = kelasArr[0] || '';
+                const rowSuffix = kelasArr[1] || '';
+
                 const matchName = nama.includes(searchTerm) || nisn.includes(searchTerm);
-                if (matchName) row.style.display = '';
+                const matchTingkat = tingkat === '' || rowTingkat === tingkat;
+                const matchKelas = kelas === '' || rowSuffix === kelas;
+
+                if (matchName && matchTingkat && matchKelas) row.style.display = '';
                 else row.style.display = 'none';
             });
         };
@@ -1522,15 +1620,19 @@
             const loading = document.getElementById('fotoBuktiLoading');
             const downloadBtn = document.getElementById('downloadFotoBtn');
 
+            // Tampilkan loading, sembunyikan gambar lama
             img.classList.add('hidden');
             loading.classList.remove('hidden');
 
+            // Set source gambar
             img.src = url;
             downloadBtn.href = url;
 
+            // Tampilkan modal
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
+            // Animasi masuk
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 modal.classList.add('opacity-100');
@@ -1545,6 +1647,7 @@
             const img = document.getElementById('fotoBuktiImage');
 
             if (modal && content) {
+                // Animasi keluar
                 content.classList.remove('scale-100');
                 content.classList.add('scale-95');
                 modal.classList.remove('opacity-100');

@@ -98,10 +98,10 @@ class SiswaController extends Controller
 
     public function store(Request $request)
     {
-        // PERBAIKAN VALIDASI: Memaksa NISN harus angka (numeric) dan pas 10 digit (digits:10)
+        // PERBAIKAN VALIDASI: Memaksa NISN harus angka (numeric) TAPI BEBAS JUMLAH DIGIT
         // DITAMBAHKAN: Validasi alamat, ortu_id, dan file foto
         $validator = Validator::make($request->all(), [
-            'nisn' => 'required|numeric|digits:10|unique:siswa,nisn', // Atau unique:siswas,nisn (sesuaikan nama tabel di DB)
+            'nisn' => 'required|numeric|unique:siswa,nisn', // <-- PERBAIKAN: Hapus batas 10 digit (digits:10)
             'nama' => 'required|string',
             'jk' => 'nullable|in:Laki-laki,Perempuan',
             'kelas' => 'required|string',
@@ -113,7 +113,6 @@ class SiswaController extends Controller
             // Custom Error Messages agar tampilannya ramah pengguna
             'nisn.required' => 'NISN wajib diisi!',
             'nisn.numeric'  => 'NISN hanya boleh berisi angka!',
-            'nisn.digits'   => 'NISN harus berjumlah persis 10 angka!',
             'nisn.unique'   => 'NISN ini sudah terdaftar di dalam sistem!'
         ]);
 
@@ -303,9 +302,9 @@ class SiswaController extends Controller
                 $kontak = isset($row[4]) ? trim($row[4]) : null;
                 $alamat = isset($row[5]) ? trim($row[5]) : null;
 
-                // Pastikan kolom wajib terisi dan NISN berjumlah 10 digit (Format numeric)
+                // Pastikan kolom wajib terisi dan NISN berupa angka
                 if ($nisn && $nama && $kelas) {
-                    if (is_numeric($nisn) && strlen((string)$nisn) == 10) {
+                    if (is_numeric($nisn)) { // <-- PERBAIKAN: Syarat strlen() == 10 DIHAPUS
 
                         // Cek apakah siswa dengan NISN tersebut sudah ada
                         $siswaExist = Siswa::where('nisn', $nisn)->first();
@@ -325,7 +324,7 @@ class SiswaController extends Controller
                             $gagal++; // Siswa sudah ada / duplikat
                         }
                     } else {
-                        $gagal++; // NISN bukan angka atau bukan 10 digit
+                        $gagal++; // NISN bukan angka
                     }
                 } else {
                     $gagal++; // Kolom wajib kosong
@@ -335,6 +334,70 @@ class SiswaController extends Controller
             return redirect()->back()->with('success', "Import selesai! Berhasil: $berhasil siswa. Gagal/Format Salah/Duplikat: $gagal baris.");
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat membaca file Excel: ' . $e->getMessage());
+        }
+    }
+
+    // ========================================================
+    // FITUR TUTUP TAHUN (KENAIKAN KELAS & KELULUSAN)
+    // ========================================================
+    public function prosesKenaikanKelas(Request $request)
+    {
+        // Keamanan: Pastikan hanya admin yang bisa menjalankan ini
+        $user = Session::get('user');
+        if (!$user || $user['role'] !== 'admin') {
+            return redirect()->back()->with('error', 'Hanya Administrator yang memiliki akses untuk proses ini.');
+        }
+
+        try {
+            // Ambil semua siswa yang masih berstatus "Aktif"
+            // Asumsi: di database Anda memiliki kolom 'status' (Aktif, Lulus, Dikeluarkan, dll)
+            // Jika tidak ada kolom status, hapus ->where('status', 'Aktif') atau ganti sesuai kolom Anda.
+            $semuaSiswaAktif = Siswa::where(function ($query) {
+                $query->where('status', 'Aktif')
+                    ->orWhereNull('status'); // Jaga-jaga jika kolom status ada yang NULL
+            })->get();
+
+            $jumlahLulus = 0;
+            $jumlahNaik = 0;
+
+            // Gunakan Transaction agar jika di tengah jalan ada error, database di-rollback (dibatalkan)
+            \Illuminate\Support\Facades\DB::transaction(function () use ($semuaSiswaAktif, &$jumlahLulus, &$jumlahNaik) {
+                foreach ($semuaSiswaAktif as $siswa) {
+                    // Ekstrak Kelas (Contoh: dari "VII A" menjadi "VII" dan "A")
+                    $parts = explode(' ', str_replace('-', ' ', $siswa->kelas));
+                    $tingkat = $parts[0] ?? '';
+                    $abjad = isset($parts[1]) ? $parts[1] : '';
+
+                    $kelasBaru = $siswa->kelas;
+                    $statusBaru = $siswa->status ?? 'Aktif';
+
+                    // Logika Kenaikan & Kelulusan
+                    if ($tingkat === 'IX') {
+                        // KELAS 9 -> LULUS
+                        $statusBaru = 'Lulus';
+                        $jumlahLulus++;
+                    } elseif ($tingkat === 'VIII') {
+                        // KELAS 8 -> KELAS 9
+                        $kelasBaru = 'IX ' . $abjad;
+                        $jumlahNaik++;
+                    } elseif ($tingkat === 'VII') {
+                        // KELAS 7 -> KELAS 8
+                        $kelasBaru = 'VIII ' . $abjad;
+                        $jumlahNaik++;
+                    }
+
+                    // Update data ke database
+                    // PERHATIAN: Baris "'poin' => 0" TELAH DIHAPUS. Poin akan tetap seperti semula.
+                    $siswa->update([
+                        'kelas'  => trim($kelasBaru),
+                        'status' => $statusBaru
+                    ]);
+                }
+            });
+
+            return redirect()->back()->with('success', "Proses Tutup Tahun Ajaran berhasil! Sebanyak $jumlahNaik siswa naik kelas dan $jumlahLulus siswa dinyatakan Lulus. Akumulasi poin siswa tidak dirubah.");
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat memproses kenaikan kelas: ' . $e->getMessage());
         }
     }
 }

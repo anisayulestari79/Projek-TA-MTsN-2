@@ -190,19 +190,45 @@ class DashboardController extends Controller
 
         $querySiswa = \App\Models\Siswa::with('ortu')->orderBy('kelas', 'asc')->orderBy('nama', 'asc');
 
-        // Menangkap parameter 'type' dari URL (all atau binaan)
+        // Menangkap parameter dari URL
         $type = $request->query('type', 'binaan');
-        $judulKategori = 'Kelas Binaan';
+        $tingkat = $request->query('tingkat', '');
+        $kelas = $request->query('kelas', '');
 
-        // Jika type adalah binaan, filter data berdasarkan kelas binaan Guru BK
+        // 1. Filter Dasarnya (Apakah Binaan BK atau Semua Anak)
         if ($type === 'binaan' && in_array($user['role'], ['bk', 'guru_bk']) && $guruDb && $guruDb->kelas_binaan) {
             $kelasArray = json_decode($guruDb->kelas_binaan, true);
             if (is_array($kelasArray) && count($kelasArray) > 0) {
                 $querySiswa->whereIn('kelas', $kelasArray);
             }
-        } elseif ($type === 'all') {
-            // Jika type adalah 'all', judul kategori diubah, kueri tetap menarik semua siswa
-            $judulKategori = 'Seluruh Siswa Madrasah';
+        }
+
+        // 2. Terapkan Filter Tingkat Tambahan (Jika Diisi di UI)
+        if (!empty($tingkat)) {
+            $querySiswa->where('kelas', 'LIKE', $tingkat . '%');
+        }
+
+        // 3. Terapkan Filter Kelas Tambahan (Jika Diisi di UI)
+        if (!empty($kelas)) {
+            $querySiswa->where('kelas', 'LIKE', '%' . $kelas);
+        }
+
+        // 4. Logika Penulisan Judul Laporan Agar Estetik & Dinamis
+        $filterText = "";
+        if (!empty($tingkat) && !empty($kelas)) {
+            $filterText = "Kelas " . $tingkat . " " . $kelas;
+        } elseif (!empty($tingkat)) {
+            $filterText = "Tingkat " . $tingkat;
+        } elseif (!empty($kelas)) {
+            $filterText = "Ruang Kelas " . $kelas;
+        }
+
+        if ($type === 'binaan') {
+            $judulKategori = 'Kelas Binaan';
+            if ($filterText) $judulKategori .= ' (' . $filterText . ')';
+        } else {
+            $judulKategori = 'Seluruh Siswa';
+            if ($filterText) $judulKategori .= ' (' . $filterText . ')';
         }
 
         $dataSiswa = $querySiswa->get();

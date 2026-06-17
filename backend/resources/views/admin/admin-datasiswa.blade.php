@@ -157,6 +157,12 @@
                         <p class="text-xs text-gray-400 mt-1">Manajemen data siswa dan poin kedisiplinan</p>
                     </div>
                     <div class="flex gap-3">
+                        <!-- TAMBAHAN: Tombol Proses Tutup Tahun -->
+                        <button
+                            class="bg-purple-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-purple-700 transition flex items-center gap-2 shadow-sm shadow-purple-200"
+                            onclick="openNaikKelasModal()">
+                            <i class="fas fa-level-up-alt"></i> Tutup Tahun
+                        </button>
                         <button
                             class="bg-[#1e293b] text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase hover:bg-gray-800 transition flex items-center gap-2 shadow-sm shadow-gray-200"
                             onclick="openImportModal()">
@@ -677,6 +683,44 @@
         </div>
     </div>
 
+    <!-- ============================================== -->
+    <!-- MODAL TUTUP TAHUN (KENAIKAN KELAS) -->
+    <!-- ============================================== -->
+    <div id="naikKelasModal"
+        class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center transform transition-all scale-95 opacity-0 duration-200"
+            id="naikKelasModalContent">
+            <div
+                class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fas fa-level-up-alt"></i>
+            </div>
+            <h3 class="font-black text-gray-800 text-xl mb-2">Proses Tutup Tahun Ajaran?</h3>
+            <div class="text-xs text-gray-500 mb-4 px-2 text-left leading-relaxed">
+                Aksi ini akan menjalankan proses berikut secara otomatis:
+                <ul class="text-[10px] text-gray-500 text-left list-disc pl-8 mt-2 mb-2 space-y-1 font-medium">
+                    <li>Siswa kelas <strong class="text-purple-600">VII</strong> naik ke kelas <strong
+                            class="text-purple-600">VIII</strong>.</li>
+                    <li>Siswa kelas <strong class="text-purple-600">VIII</strong> naik ke kelas <strong
+                            class="text-purple-600">IX</strong>.</li>
+                    <li>Siswa kelas <strong class="text-purple-600">IX</strong> akan diubah statusnya menjadi <strong
+                            class="text-green-600">Lulus</strong>.</li>
+                    <li><strong class="text-red-500">Poin kedisiplinan TIDAK AKAN DIRESET</strong> (akumulasi
+                        berlanjut).</li>
+                </ul>
+            </div>
+
+            <form action="{{ route('admin.siswa.kenaikan') }}" method="POST" class="flex justify-center gap-3">
+                @csrf
+                <button type="button" onclick="closeModals()"
+                    class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200">Batal</button>
+                <button type="submit"
+                    class="px-6 py-2.5 bg-purple-600 text-white rounded-xl font-bold text-xs hover:bg-purple-700 shadow-lg shadow-purple-100 flex items-center gap-2">
+                    <i class="fas fa-bolt"></i> Proses Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Script Kontrol View & Modal -->
     <script>
         // Logika Pindah View Menu (Profil & Data Siswa)
@@ -716,7 +760,9 @@
 
         function closeModals() {
             // Animasi tutup modal
-            const contents = ['importModalContent', 'addModalContent', 'editModalContent', 'deleteModalContent'];
+            const contents = ['importModalContent', 'addModalContent', 'editModalContent', 'deleteModalContent',
+                'naikKelasModalContent'
+            ];
             contents.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -730,6 +776,7 @@
                 document.getElementById('editSiswaModal')?.classList.add('hidden');
                 document.getElementById('deleteSiswaModal')?.classList.add('hidden');
                 document.getElementById('importSiswaModal')?.classList.add('hidden');
+                document.getElementById('naikKelasModal')?.classList.add('hidden');
             }, 200);
         }
 
@@ -750,6 +797,10 @@
 
         function openImportModal() {
             openModalWithAnimation('importSiswaModal', 'importModalContent');
+        }
+
+        function openNaikKelasModal() {
+            openModalWithAnimation('naikKelasModal', 'naikKelasModalContent');
         }
 
         function openAddSiswaModal() {

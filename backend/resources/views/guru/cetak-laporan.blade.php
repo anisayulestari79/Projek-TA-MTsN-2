@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Rekapitulasi Pelanggaran Siswa</title>
     <style>
-        /* Menggunakan font formal Times New Roman */
         body {
             font-family: 'Times New Roman', Times, serif;
             color: #000;
@@ -22,31 +21,25 @@
         @media screen {
             body {
                 background-color: #e5e7eb;
-                /* Latar belakang abu-abu */
                 padding: 20px;
             }
 
             .container {
                 background-color: #fff;
                 max-width: 21cm;
-                /* Lebar kertas A4 */
                 min-height: 29.7cm;
-                /* Tinggi kertas A4 */
                 margin: 0 auto;
                 padding: 2cm 2.5cm;
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-                /* Efek bayangan kertas */
             }
 
             .table-responsive {
                 overflow-x: auto;
-                /* Bisa di-scroll ke samping di HP */
                 -webkit-overflow-scrolling: touch;
             }
 
             table.data-table {
                 min-width: 650px;
-                /* Mencegah tabel gepeng di layar HP */
             }
         }
 
@@ -81,10 +74,6 @@
                 min-width: auto;
             }
         }
-
-        /* ======================================================= */
-        /* GAYA KOMPONEN SURAT UMUM                                */
-        /* ======================================================= */
 
         /* Kop Surat Resmi */
         table.kop-table {
@@ -282,8 +271,9 @@
             $academicYear = $currentYear . ' / ' . ($currentYear + 1);
         @endphp
 
-        @if (isset($judulKategori) && $judulKategori == 'Kelas Binaan')
-            <div class="sub-judul">Kategori: Kelas Binaan | Tahun Ajaran {{ $academicYear }}</div>
+        <!-- TAMPILAN SUB JUDUL DINAMIS SESUAI KATEGORI/FILTER -->
+        @if (isset($judulKategori))
+            <div class="sub-judul">Kategori: {{ $judulKategori }} | Tahun Ajaran {{ $academicYear }}</div>
         @else
             <div class="sub-judul">Tahun Ajaran {{ $academicYear }}</div>
         @endif
@@ -352,7 +342,8 @@
         <div class="ttd-container clearfix">
             <div class="ttd-box">
                 Banjarmasin, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}<br>
-                @if (isset($judulKategori) && $judulKategori == 'Kelas Binaan')
+                <!-- Logika TTD Dinamis: Jika mencetak kelas binaan, maka jabatannya Guru BK -->
+                @if (isset($judulKategori) && str_contains($judulKategori, 'Binaan'))
                     Guru Bimbingan Konseling,
                 @else
                     Pihak Madrasah,
