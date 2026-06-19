@@ -261,79 +261,85 @@ class SiswaController extends Controller
     // ========================================================
     public function importExcel(Request $request)
     {
-        // 1. Validasi file yang diunggah
-        $validator = Validator::make($request->all(), [
-            'file_excel' => 'required|mimes:xlsx,xls,csv|max:5120', // Maks 5MB
+        // 1. Validasi File Excel
+        $request->validate([
+            'file_excel' => 'required|mimes:xlsx,xls|max:5120'
         ], [
-            'file_excel.required' => 'Pilih file Excel terlebih dahulu!',
-            'file_excel.mimes'    => 'Format file harus berupa excel (xlsx/xls/csv)!',
-            'file_excel.max'      => 'Ukuran file maksimal 5MB!'
+            'file_excel.mimes' => 'File harus berformat Excel (.xlsx atau .xls)',
+            'file_excel.max' => 'Ukuran file maksimal 5MB'
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->with('error', 'Gagal mengimpor file! Pastikan format file Anda benar.');
-        }
-
         try {
+            // 2. Baca isi file Excel menggunakan PhpSpreadsheet
             $file = $request->file('file_excel');
-
-            // 2. Load file spreadsheet
-            $spreadsheet = IOFactory::load($file->getPathname());
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getPathname());
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
 
+            // Hapus baris pertama karena itu adalah baris Judul Kolom (Header)
+            unset($rows[0]);
+
+            // 3. Ambil ID Tahun Ajaran yang sedang Aktif saat ini sebagai Default (Jaga-jaga jika di Excel kosong)
+            $activeYearId = \App\Models\TahunAjaran::where('is_active', true)->value('id');
+
             $berhasil = 0;
-            $gagal = 0;
 
-            // 3. Looping data (Dimulai dari index 1 untuk melewati Header/Baris Pertama)
-            for ($i = 1; $i < count($rows); $i++) {
-                $row = $rows[$i];
-
-                // Lewati baris kosong
-                if (empty(array_filter($row))) {
-                    continue;
-                }
-
-                // Asumsi Urutan Kolom: 0:NISN, 1:Nama, 2:JK, 3:Kelas, 4:Kontak, 5:Alamat
+            // 4. Looping setiap baris di Excel
+            foreach ($rows as $row) {
+                // Mapping index kolom Excel berdasarkan format:
+                // 0:NISN | 1:Nama | 2:JK | 3:Kelas | 4:Kontak | 5:Alamat | 6:Tahun Masuk
                 $nisn   = isset($row[0]) ? trim($row[0]) : null;
                 $nama   = isset($row[1]) ? trim($row[1]) : null;
                 $jk     = isset($row[2]) ? trim($row[2]) : null;
                 $kelas  = isset($row[3]) ? trim($row[3]) : null;
                 $kontak = isset($row[4]) ? trim($row[4]) : null;
                 $alamat = isset($row[5]) ? trim($row[5]) : null;
+                $thn_excel = isset($row[6]) ? trim($row[6]) : null;
 
-                // Pastikan kolom wajib terisi dan NISN berupa angka
-                if ($nisn && $nama && $kelas) {
-                    if (is_numeric($nisn)) { // <-- PERBAIKAN: Syarat strlen() == 10 DIHAPUS
-
-                        // Cek apakah siswa dengan NISN tersebut sudah ada
-                        $siswaExist = Siswa::where('nisn', $nisn)->first();
-
-                        if (!$siswaExist) {
-                            Siswa::create([
-                                'nisn'        => $nisn,
-                                'nama'        => $nama,
-                                'jk'          => $jk,
-                                'kelas'       => $kelas,
-                                'kontak_ortu' => $kontak,
-                                'alamat'      => $alamat,
-                                'poin'        => 0
-                            ]);
-                            $berhasil++;
-                        } else {
-                            $gagal++; // Siswa sudah ada / duplikat
-                        }
-                    } else {
-                        $gagal++; // NISN bukan angka
-                    }
-                } else {
-                    $gagal++; // Kolom wajib kosong
+                // Wajib ada NISN dan Nama, jika kosong lewati baris ini
+                if (empty($nisn) || empty($nama)) {
+                    continue;
                 }
+
+                // ==========================================
+                // LOGIKA CERDAS PENCARIAN TAHUN MASUK
+                // ==========================================
+                $tahunMasukId = $activeYearId; // Default
+
+                if (!empty($thn_excel)) {
+                    // Cari di database tabel tahun_ajarans yang namanya mirip dengan ketikan di Excel
+                    // Contoh: Excel ngetik "2024/2025", maka cari yg namanya mengandung teks itu
+                    $cariTahun = \App\Models\TahunAjaran::where('nama', 'LIKE', "%{$thn_excel}%")->first();
+
+                    if ($cariTahun) {
+                        $tahunMasukId = $cariTahun->id;
+                    }
+                }
+
+                // ==========================================
+                // SIMPAN KE DATABASE
+                // ==========================================
+                // updateOrCreate akan mencari NISN. 
+                // Jika sudah ada, datanya diupdate. Jika belum ada, dibuat siswa baru.
+                \App\Models\Siswa::updateOrCreate(
+                    ['nisn' => $nisn],
+                    [
+                        'nama'           => $nama,
+                        'jk'             => $jk,
+                        'kelas'          => $kelas,
+                        'kontak_ortu'    => $kontak,
+                        'alamat'         => $alamat,
+                        'tahun_masuk_id' => $tahunMasukId,
+                        'status'         => 'Aktif' // Anak yang baru diimport pasti berstatus Aktif
+                    ]
+                );
+
+                $berhasil++;
             }
 
-            return redirect()->back()->with('success', "Import selesai! Berhasil: $berhasil siswa. Gagal/Format Salah/Duplikat: $gagal baris.");
+            return redirect()->back()->with('success', "Sukses! $berhasil data siswa berhasil ditambahkan/diperbarui dari Excel.");
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan sistem saat membaca file Excel: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memproses file Excel: Pastikan format kolom sesuai panduan. Detail error: ' . $e->getMessage());
         }
     }
 

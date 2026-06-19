@@ -77,6 +77,11 @@
                 <i class="fas fa-star mr-4 text-sm"></i> <span class="font-medium">Poin Siswa</span>
             </a>
 
+            <a href="{{ route('admin.tahunajaran.index') }}"
+                class="sidebar-item flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl">
+                <i class="fas fa-calendar-alt mr-4 text-sm"></i> <span class="font-medium">Tahun Ajaran</span>
+            </a>
+
             <!-- MENU AUDIT LOG AKTIF MENGGUNAKAN ONCLICK SHOWVIEW -->
             <a href="#" onclick="showView('audit')" id="nav-audit"
                 class="sidebar-item active flex items-center px-6 py-4 transition">

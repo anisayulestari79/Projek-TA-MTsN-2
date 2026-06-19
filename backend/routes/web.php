@@ -145,6 +145,12 @@ Route::middleware('web')->group(function () {
         Route::delete('/poin/riwayat-clear', [PoinController::class, 'deleteAllRiwayat'])->name('poin.deleteAllRiwayat');
         Route::get('/riwayat/api/{nisn}', [PoinController::class, 'getRiwayatApi'])->name('riwayat.api');
 
+        // Rute Tahun Ajaran
+        Route::get('/tahun-ajaran', [App\Http\Controllers\Api\TahunAjaranController::class, 'index'])->name('tahunajaran.index');
+        Route::post('/tahun-ajaran', [App\Http\Controllers\Api\TahunAjaranController::class, 'store'])->name('tahunajaran.store');
+        Route::post('/tahun-ajaran/{id}/aktif', [App\Http\Controllers\Api\TahunAjaranController::class, 'setAktif'])->name('tahunajaran.aktif');
+        Route::delete('/tahun-ajaran/{id}', [App\Http\Controllers\Api\TahunAjaranController::class, 'destroy'])->name('tahunajaran.destroy');
+
         // --- AUDIT LOG ---
         Route::get('/audit-log', [DashboardController::class, 'auditLog'])->name('audit.index');
     });

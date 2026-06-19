@@ -23,6 +23,9 @@ class Siswa extends Model
         'photo',
         'alamat',
         'ortu_id',
+        'status',
+        'tahun_masuk_id',
+        'tahun_keluar_id',
     ];
 
     /**
@@ -42,5 +45,15 @@ class Siswa extends Model
     public function riwayatPoin() // Pastikan 'riwayatPoin' bukan 'RiwayatPoin' atau lainnya
     {
         return $this->hasMany(RiwayatPoin::class, 'nisn', 'nisn');
+    }
+
+    public function tahunMasuk()
+    {
+        return $this->belongsTo(TahunAjaran::class, 'tahun_masuk_id');
+    }
+
+    public function tahunKeluar()
+    {
+        return $this->belongsTo(TahunAjaran::class, 'tahun_keluar_id');
     }
 }
