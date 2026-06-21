@@ -35,7 +35,8 @@
             <div class="flex items-center gap-3 mb-2">
                 <img src="https://i.ibb.co.com/Psm2GxFN/5ef6453c-3a7b-47dc-a402-dacf0adb575d-removebg-preview-1.png"
                     class="w-10 drop-shadow-md" alt="Logo">
-                <h1 class="font-bold text-lg leading-tight tracking-tight uppercase">Sistem<br>Pelanggaran<br>Poin Siswa
+                <h1 class="font-bold text-2xl leading-tight tracking-tight uppercase">Sistem<br>Pelanggaran<br>Poin
+                    Siswa
                 </h1>
             </div>
             <p class="text-[9px] opacity-80 font-bold tracking-widest uppercase ml-1">MTsN 2 Kota Banjarmasin</p>

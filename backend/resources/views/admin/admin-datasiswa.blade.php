@@ -67,7 +67,8 @@
             <div class="flex items-center gap-3 mb-2">
                 <img src="https://i.ibb.co.com/Psm2GxFN/5ef6453c-3a7b-47dc-a402-dacf0adb575d-removebg-preview-1.png"
                     class="w-10 drop-shadow-md" alt="Logo Kemenag">
-                <h1 class="font-bold text-lg leading-tight tracking-tight uppercase">Sistem<br>Pelanggaran<br>Poin Siswa
+                <h1 class="font-bold text-2xl leading-tight tracking-tight uppercase">Sistem<br>Pelanggaran<br>Poin
+                    Siswa
                 </h1>
             </div>
             <p class="text-[9px] opacity-80 font-bold tracking-widest uppercase ml-1">MTsN 2 Kota Banjarmasin</p>
@@ -332,7 +333,7 @@
                                 <th class="p-4 text-center w-24">KELAS</th>
                                 <th class="p-4 text-center">KONTAK ORTU</th>
                                 <th class="p-4 text-center w-24">POIN</th>
-                                <th class="p-4 text-center w-28">STATUS</th>
+                                <th class="p-4 text-center w-32">STATUS / ANGKATAN</th>
                                 <th class="p-4 text-center rounded-tr-2xl w-36">AKSI</th>
                             </tr>
                         </thead>
@@ -393,9 +394,7 @@
                                             @else
                                                 <span class="text-green-600">{{ $siswa->poin ?? 0 }}</span>
                                             @endif
-                                        </td>
-
-                                        <!-- Label Status -->
+                                            <!-- Label Status & Tahun Masuk -->
                                         <td class="p-4 text-center">
                                             @if (strtolower($status) == 'aktif')
                                                 <span
@@ -407,6 +406,9 @@
                                                 <span
                                                     class="bg-red-100 text-red-700 px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-wider border border-red-200">{{ $status }}</span>
                                             @endif
+                                            <p class="text-[9px] font-bold text-gray-400 uppercase mt-1.5">
+                                                {{ $siswa->tahunMasuk->nama ?? 'Belum Diatur' }}
+                                            </p>
                                         </td>
 
                                         <td class="p-4 text-center whitespace-nowrap">
@@ -418,6 +420,7 @@
                                                 data-ortu-nama="{{ $siswa->ortu->name ?? 'Belum Ditautkan' }}"
                                                 data-poin="{{ $siswa->poin ?? 0 }}"
                                                 data-status="{{ $status }}"
+                                                data-tahun-nama="{{ $siswa->tahunMasuk->nama ?? 'Belum Diatur' }}"
                                                 data-photo="{{ $siswa->photo ? (filter_var($siswa->photo, FILTER_VALIDATE_URL) ? $siswa->photo : asset('storage/' . $siswa->photo)) : '' }}"
                                                 class="text-green-500 hover:text-green-700 mx-0.5 bg-green-50 hover:bg-green-100 p-2 rounded-lg transition shadow-sm"
                                                 title="Detail">
@@ -599,11 +602,13 @@
                 </div>
                 <h4 id="detailProfileNama"
                     class="text-sm md:text-base font-black text-gray-800 uppercase text-center leading-tight">-</h4>
-                <div class="flex items-center gap-2 mt-1 md:mt-2">
+                <div class="flex items-center justify-center flex-wrap gap-2 mt-1 md:mt-2">
                     <span id="detailProfileNisn"
                         class="text-[9px] md:text-[10px] font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">-</span>
                     <span id="detailProfileStatus"
                         class="text-[9px] md:text-[10px] font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full uppercase">-</span>
+                    <span id="detailProfileTahun"
+                        class="text-[9px] md:text-[10px] font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full uppercase">-</span>
                 </div>
             </div>
 
@@ -1075,9 +1080,11 @@
             let ortuNama = btn.getAttribute('data-ortu-nama');
             let status = btn.getAttribute('data-status');
             let poin = btn.getAttribute('data-poin');
+            let tahunNama = btn.getAttribute('data-tahun-nama');
             let photo = btn.getAttribute('data-photo');
 
             document.getElementById('detailProfileNama').innerText = nama || '-';
+            document.getElementById('detailProfileTahun').innerText = "Angkatan: " + (tahunNama || '-');
             document.getElementById('detailProfileNisn').innerText = nisn || '-';
             document.getElementById('detailProfileKelas').innerText = kelas || '-';
             document.getElementById('detailProfileJk').innerText = jk || '-';
