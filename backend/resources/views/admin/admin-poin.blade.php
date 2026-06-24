@@ -105,7 +105,7 @@
                             {{ $user['name'] ?? 'Admin User' }}</p>
                         <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Status: Administrator</p>
                     </div>
-                    <!-- PERBAIKAN GAMBAR PROFIL -->
+
                     @php
                         $avatarUrl =
                             'https://ui-avatars.com/api/?name=' .
@@ -161,7 +161,7 @@
                     </h3>
                 </div>
 
-                <form id="poinForm" class="space-y-6" onsubmit="submitPoinForm(event)">
+                <form id="poinForm" class="space-y-6" onsubmit="submitPoinForm(event)" enctype="multipart/form-data">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="relative md:col-span-2">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Cari Nama Siswa
@@ -213,11 +213,31 @@
                         </div>
                     </div>
 
+                    <!-- BAGIAN FITUR KAMERA / UPLOAD FOTO (Baru) -->
+                    <div class="mt-4 border-t border-gray-50 pt-5 md:pt-6">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Unggah Bukti Foto
+                            (Opsional)</label>
+                        <div class="flex items-center gap-3 md:gap-4">
+                            <div class="relative flex-1">
+                                <input type="file" id="p_foto_bukti" name="foto_bukti" accept="image/*"
+                                    class="block w-full text-xs md:text-sm text-gray-500 file:mr-2 md:file:mr-4 file:py-2 md:file:py-3 file:px-3 md:file:px-4 file:rounded-xl file:border-0 file:text-[10px] md:file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 border border-gray-100 rounded-xl bg-gray-50 cursor-pointer"
+                                    onchange="previewImage(event)">
+                            </div>
+                            <div id="imagePreviewContainer"
+                                class="hidden w-12 h-12 md:w-16 md:h-16 rounded-xl border-2 border-dashed border-green-200 overflow-hidden shrink-0 shadow-inner">
+                                <img id="imagePreview" src="#" alt="Preview"
+                                    class="w-full h-full object-cover">
+                            </div>
+                        </div>
+                        <p class="text-[9px] text-gray-400 mt-2 italic">*Pilih dari galeri atau gunakan kamera HP untuk
+                            bukti pelanggaran.</p>
+                    </div>
+
                     <input type="hidden" id="p_nisn" name="nisn" required>
                     <input type="hidden" id="p_keterangan_pelanggaran" name="ket" required>
                     <input type="hidden" id="p_jumlah_poin" name="jumlah" required>
 
-                    <div class="flex gap-4 pt-4">
+                    <div class="flex gap-4 pt-4 border-t border-gray-50 mt-4">
                         <button type="submit"
                             class="bg-[#10b981] text-white px-8 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition flex items-center justify-center gap-2 flex-1 md:flex-none">
                             <i class="fas fa-save"></i> Simpan Poin
@@ -249,14 +269,15 @@
                     @endif
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto border border-gray-50 rounded-xl">
                     <table class="w-full text-left border-collapse min-w-[800px]">
                         <thead class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
                             <tr>
-                                <th class="py-4 pl-6 rounded-tl-xl">Waktu Masuk</th>
+                                <th class="py-4 pl-6 rounded-tl-xl w-40">Waktu Masuk</th>
                                 <th class="py-4">NISN / Nama Siswa</th>
                                 <th class="py-4 text-center">Kelas</th>
                                 <th class="py-4">Keterangan Pelanggaran</th>
+                                <th class="py-4 text-center">Foto Bukti</th> <!-- Kolom Baru -->
                                 <th class="py-4 text-center">Poin</th>
                                 <th class="py-4 pr-6 rounded-tr-xl text-right">Aksi</th>
                             </tr>
@@ -269,6 +290,52 @@
             </div>
         </div>
     </main>
+
+    <!-- MODAL FOTO BUKTI PELANGGARAN -->
+    <div id="fotoBuktiModal"
+        class="fixed inset-0 bg-gray-900/90 hidden z-[70] flex items-center justify-center backdrop-blur-sm transition-opacity opacity-0 duration-200 p-4">
+        <div class="bg-white rounded-2xl overflow-hidden shadow-2xl relative max-w-3xl w-full transform scale-95 transition-transform duration-200"
+            id="fotoBuktiContent">
+
+            <!-- Header Modal -->
+            <div class="px-4 md:px-6 py-3 md:py-4 bg-gray-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-xs md:text-sm uppercase tracking-wider"><i class="fas fa-image mr-2"></i>
+                    Bukti Pelanggaran</h3>
+                <button onclick="closeFotoBuktiModal()"
+                    class="text-gray-400 hover:text-white transition focus:outline-none p-1">
+                    <i class="fas fa-times text-lg md:text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Tempat Foto -->
+            <div class="p-2 bg-gray-100 flex justify-center items-center relative"
+                style="min-height: 250px; max-height: 70vh;">
+                <div id="fotoBuktiLoading"
+                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 z-0">
+                    <i class="fas fa-spinner fa-spin text-2xl md:text-3xl mb-2"></i>
+                    <span class="text-[10px] md:text-xs font-bold">Memuat gambar...</span>
+                </div>
+
+                <img id="fotoBuktiImage" src="" alt="Bukti Pelanggaran"
+                    class="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain rounded-lg shadow-sm relative z-10 hidden"
+                    onload="document.getElementById('fotoBuktiLoading').classList.add('hidden'); this.classList.remove('hidden');">
+            </div>
+
+            <!-- Footer Bantuan -->
+            <div
+                class="px-4 md:px-6 py-3 bg-gray-50 border-t border-gray-200 text-center flex justify-center items-center gap-4">
+                <a id="downloadFotoBtn" href="#" download
+                    class="text-[10px] md:text-xs font-bold text-gray-600 hover:text-blue-600 transition flex items-center gap-1.5 p-2">
+                    <i class="fas fa-download"></i> Unduh
+                </a>
+                <span class="text-gray-300">|</span>
+                <button onclick="closeFotoBuktiModal()"
+                    class="text-[10px] md:text-xs font-bold text-gray-600 hover:text-gray-900 transition flex items-center gap-1.5 p-2">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Data referensi pelanggaran dari database
@@ -391,6 +458,27 @@
         });
 
         // ==========================================
+        // FUNGSI PREVIEW FOTO
+        // ==========================================
+        function previewImage(event) {
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const previewImage = document.getElementById('imagePreview');
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            } else {
+                previewImage.src = "#";
+                previewContainer.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
         // FUNGSI AJAX: MUAT RIWAYAT
         // ==========================================
         function loadRiwayatTable() {
@@ -414,8 +502,13 @@
                                 minute: '2-digit'
                             });
 
-                            let badgeClass = row.jenis === 'Tambah' ? 'bg-red-50 text-red-600' :
-                                'bg-green-50 text-green-600';
+                            let fotoPreview = row.foto_bukti ?
+                                `<button type="button" onclick="openFotoBuktiModal('/storage/${row.foto_bukti}')" class="inline-flex bg-green-50 text-green-600 px-2 py-1.5 rounded-lg text-[9px] font-bold hover:bg-green-100 transition items-center gap-1 border border-green-100 shadow-sm cursor-pointer whitespace-nowrap"><i class="fas fa-search-plus"></i> Lihat Foto</button>` :
+                                '<span class="text-[10px] text-gray-400 italic font-medium bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">Tanpa Bukti</span>';
+
+                            let badgeClass = row.jenis === 'Tambah' ?
+                                'bg-red-50 text-red-600 border border-red-200' :
+                                'bg-green-50 text-green-600 border border-green-200';
                             let prefixSign = row.jenis === 'Tambah' ? '+' : '-';
 
                             tr.innerHTML = `
@@ -426,6 +519,7 @@
                                 </td>
                                 <td class="py-5 text-center font-bold text-gray-500">${row.kelas}</td>
                                 <td class="py-5 font-bold text-gray-600 max-w-xs">${row.ket}</td>
+                                <td class="py-5 text-center">${fotoPreview}</td>
                                 <td class="py-5 text-center">
                                     <span class="${badgeClass} px-3 py-1 rounded-lg font-black text-[10px]">${prefixSign}${row.jumlah}</span>
                                 </td>
@@ -439,14 +533,14 @@
                         });
                     } else {
                         tbody.innerHTML =
-                            '<tr><td colspan="6" class="py-10 text-center text-gray-400 font-bold">Belum ada riwayat pelanggaran.</td></tr>';
+                            '<tr><td colspan="7" class="py-10 text-center text-gray-400 font-bold">Belum ada riwayat pelanggaran.</td></tr>';
                     }
                 })
                 .catch(err => {
                     console.error("Gagal memuat riwayat:", err);
                     const tbody = document.getElementById('riwayatTableBody');
                     tbody.innerHTML =
-                        '<tr><td colspan="6" class="py-10 text-center text-red-400 font-bold">Gagal mengambil data riwayat. Cek Console.</td></tr>';
+                        '<tr><td colspan="7" class="py-10 text-center text-red-400 font-bold">Gagal mengambil data riwayat. Cek Console.</td></tr>';
                 });
         }
 
@@ -459,6 +553,7 @@
             const nisn = document.getElementById('p_nisn').value;
             const jumlah = document.getElementById('p_jumlah_poin').value;
             const ket = document.getElementById('p_keterangan_pelanggaran').value;
+            const fileInput = document.getElementById('p_foto_bukti');
 
             if (!nisn || !jumlah || !ket) {
                 showAlert('error',
@@ -466,20 +561,22 @@
                 return;
             }
 
-            const formData = {
-                nisn: nisn,
-                jumlah: jumlah,
-                ket: ket
-            };
+            const formData = new FormData();
+            formData.append('nisn', nisn);
+            formData.append('jumlah', jumlah);
+            formData.append('ket', ket);
+            if (fileInput && fileInput.files[0]) {
+                formData.append('foto_bukti', fileInput.files[0]);
+            }
 
             fetch('/admin/poin/add', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        // Menghapus 'Content-Type' agar browser otomatis menyetel multipart/form-data
                     },
-                    body: JSON.stringify(formData)
+                    body: formData
                 })
                 .then(res => res.json())
                 .then(res => {
@@ -503,7 +600,6 @@
         function deleteRiwayatItem(id) {
             if (!confirm('Batalkan poin ini? Poin siswa akan dikembalikan otomatis.')) return;
 
-            // Menggunakan URL langsung dan Token CSRF di header
             fetch(`/admin/poin/riwayat/${id}`, {
                     method: 'DELETE',
                     headers: {
@@ -533,7 +629,6 @@
         function clearAllRiwayat() {
             if (!confirm('Yakin menghapus SELURUH log riwayat di madrasah?')) return;
 
-            // Menggunakan URL langsung dan Token CSRF di header
             fetch(`/admin/poin/riwayat-clear`, {
                     method: 'DELETE',
                     headers: {
@@ -558,7 +653,7 @@
         }
 
         // ==========================================
-        // FUNGSI BANTUAN
+        // FUNGSI BANTUAN & MODAL POPUP
         // ==========================================
         function showAlert(type, message) {
             const alertBox = document.getElementById('liveAlert');
@@ -583,7 +678,66 @@
             document.getElementById('p_nisn').value = '';
             document.getElementById('p_keterangan_pelanggaran').value = '';
             document.getElementById('p_jumlah_poin').value = '';
+
+            // Reset preview foto
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const previewImage = document.getElementById('imagePreview');
+            if (previewImage) previewImage.src = "#";
+            if (previewContainer) previewContainer.classList.add('hidden');
         }
+
+        window.openFotoBuktiModal = function(url) {
+            const modal = document.getElementById('fotoBuktiModal');
+            const content = document.getElementById('fotoBuktiContent');
+            const img = document.getElementById('fotoBuktiImage');
+            const loading = document.getElementById('fotoBuktiLoading');
+            const downloadBtn = document.getElementById('downloadFotoBtn');
+
+            img.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            img.src = url;
+            downloadBtn.href = url;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('opacity-100');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        };
+
+        window.closeFotoBuktiModal = function() {
+            const modal = document.getElementById('fotoBuktiModal');
+            const content = document.getElementById('fotoBuktiContent');
+            const img = document.getElementById('fotoBuktiImage');
+
+            if (modal && content) {
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0');
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    img.src = "";
+                }, 200);
+            }
+        };
+
+        // Esc key to close modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                const fotoModal = document.getElementById('fotoBuktiModal');
+                if (fotoModal && !fotoModal.classList.contains('hidden')) {
+                    closeFotoBuktiModal();
+                }
+            }
+        });
 
         // ==========================================
         // SCRIPT KONTROL VIEW & MODAL PROFIL
