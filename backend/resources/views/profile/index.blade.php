@@ -31,7 +31,6 @@
 
         // Logika dinamis untuk tombol "Kembali ke Dashboard" sesuai Role
         // PERBAIKAN: Menambahkan 'guru_bk' agar tidak terlempar ke halaman utama (ter-logout)
-        // Telah dihapus bagian route untuk 'ortu' sesuai permintaan
         $dashRoute = '/';
         if ($user->role === 'admin') {
             $dashRoute = route('admin.dashboard');
@@ -194,12 +193,13 @@
         class="fixed inset-0 bg-gray-900/80 hidden z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-[30px] p-6 md:p-8 max-w-md w-full shadow-2xl relative">
             <button onclick="document.getElementById('editModal').classList.add('hidden')"
-                class="absolute top-6 right-6 text-gray-400 hover:text-red-500"><i
+                class="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition"><i
                     class="fas fa-times text-xl"></i></button>
             <h3 class="text-lg font-black text-gray-800 uppercase tracking-widest mb-6 border-b pb-4">Edit Data Diri
             </h3>
 
-            <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data"
+            <!-- PENAMBAHAN ID="profileForm" AGAR BISA DITANGKAP AJAX -->
+            <form id="profileForm" action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data"
                 class="space-y-4">
                 @csrf
                 <div>
@@ -240,7 +240,9 @@
 
                 <div class="pt-4 flex gap-3">
                     <button type="submit"
-                        class="flex-1 bg-[#10b981] text-white py-3 rounded-xl text-xs font-bold uppercase shadow-lg shadow-green-100 hover:bg-green-600 transition">Simpan</button>
+                        class="flex-1 bg-[#10b981] text-white py-3 rounded-xl text-xs font-bold uppercase shadow-lg shadow-green-100 hover:bg-green-600 transition flex items-center justify-center">
+                        <i class="fas fa-save mr-2"></i> Simpan
+                    </button>
                     <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')"
                         class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl text-xs font-bold uppercase hover:bg-gray-200 transition">Batal</button>
                 </div>
@@ -248,6 +250,7 @@
         </div>
     </div>
 
+    <!-- LOGIKA JAVASCRIPT -->
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -261,6 +264,65 @@
                 setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
             }
         }
+
+        // ==========================================
+        // Logika Submit Profil via AJAX (Anti Refresh)
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileForm = document.getElementById('profileForm');
+            if (profileForm) {
+                profileForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+
+                    // Beri efek loading saat diklik
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+
+                    try {
+                        const formData = new FormData(this);
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json' // Mencegah Laravel membalas dengan HTML yang bikin error
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            alert(result.message || 'Profil berhasil diperbarui!');
+                            window.location
+                        .reload(); // Segarkan halaman otomatis agar foto & nama berubah
+                        } else {
+                            // Tangkap pesan error validasi (seperti password kurang dari 6 huruf)
+                            let errorMsg = result.message || 'Terjadi kesalahan saat menyimpan profil.';
+                            if (result.errors) {
+                                const firstError = Object.values(result.errors)[0][0];
+                                errorMsg += '\n- ' + firstError;
+                            }
+                            alert(errorMsg);
+
+                            // Kembalikan tombol seperti semula jika gagal
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                            submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Gagal terhubung ke server. Pastikan koneksi internet stabil.');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                    }
+                });
+            }
+        });
     </script>
 </body>
 

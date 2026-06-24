@@ -22,6 +22,13 @@ class SiswaController extends Controller
         // Load siswa beserta jumlah riwayat poin-nya
         $query = Siswa::withCount('riwayatPoin');
 
+        // --- TAMBAHAN LOGIKA FILTER TAB STATUS ---
+        // Jika parameter status tidak dipilih, defaultnya tampilkan "Aktif" saja
+        $status = $request->query('status', 'Aktif');
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
         // Filter by tingkat (Mungkin string ini perlu disesuaikan jika inputnya "VII" bukan "7")
         if ($request->has('tingkat') && $request->tingkat != '') {
             $query->where('kelas', 'like', $request->tingkat . '%');
@@ -72,7 +79,8 @@ class SiswaController extends Controller
             'dataSiswa' => $siswa,
             'user' => $user,
             'daftarKelas' => $daftarKelas, // <-- Variabel ini dikirim ke tampilan
-            'daftarOrtu' => $daftarOrtu    // <-- Variabel ini dikirim ke tampilan (BARU)
+            'daftarOrtu' => $daftarOrtu,   // <-- Variabel ini dikirim ke tampilan (BARU)
+            'status' => $status            // <-- Tambahan mengirim variabel status ke view agar tab active sesuai filter
         ]);
     }
 
@@ -356,8 +364,6 @@ class SiswaController extends Controller
 
         try {
             // Ambil semua siswa yang masih berstatus "Aktif"
-            // Asumsi: di database Anda memiliki kolom 'status' (Aktif, Lulus, Dikeluarkan, dll)
-            // Jika tidak ada kolom status, hapus ->where('status', 'Aktif') atau ganti sesuai kolom Anda.
             $semuaSiswaAktif = Siswa::where(function ($query) {
                 $query->where('status', 'Aktif')
                     ->orWhereNull('status'); // Jaga-jaga jika kolom status ada yang NULL
@@ -393,7 +399,6 @@ class SiswaController extends Controller
                     }
 
                     // Update data ke database
-                    // PERHATIAN: Baris "'poin' => 0" TELAH DIHAPUS. Poin akan tetap seperti semula.
                     $siswa->update([
                         'kelas'  => trim($kelasBaru),
                         'status' => $statusBaru
