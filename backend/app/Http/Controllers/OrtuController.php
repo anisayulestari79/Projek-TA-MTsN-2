@@ -58,6 +58,11 @@ class OrtuController extends Controller
         // 1. Ambil daftar anak yang terhubung dengan akun Wali Murid ini
         $daftarAnak = \App\Models\Siswa::where('ortu_id', $user->id)->get();
 
+        // Filter hanya anak yang masih aktif untuk form konsultasi
+        $anakAktif = $daftarAnak->filter(function ($anak) {
+            return strtolower($anak->status ?? 'aktif') === 'aktif';
+        });
+
         // 2. LOGIKA BARU: Cari Guru BK kelas binaan untuk masing-masing anak secara dinamis
         foreach ($daftarAnak as $anak) {
             // Cari data guru BK yang kelas binaannya (JSON) mengandung kelas anak saat ini
@@ -90,7 +95,7 @@ class OrtuController extends Controller
 
         $riwayatKonsultasi = $query->get();
 
-        return view('ortu.konsultasi', compact('daftarAnak', 'riwayatKonsultasi'));
+        return view('ortu.konsultasi', compact('daftarAnak', 'anakAktif', 'riwayatKonsultasi'));
     }
 
     /**
@@ -106,6 +111,11 @@ class OrtuController extends Controller
         ]);
 
         $siswa = Siswa::findOrFail($request->siswa_id);
+
+        // Validasi Keamanan Lapis 2: Tolak jika status siswa bukan Aktif
+        if (strtolower($siswa->status ?? 'aktif') !== 'aktif') {
+            return redirect()->back()->with('error', 'Gagal: Layanan konsultasi tidak tersedia karena status ananda sudah tidak aktif (Lulus/Dikeluarkan).');
+        }
 
         // Cari guru BK berdasarkan kelas anak tersebut untuk mendapatkan bk_id
         $guruBk = \App\Models\Guru::where('role', 'bk')
@@ -141,35 +151,44 @@ class OrtuController extends Controller
     public function tambahAnak(Request $request)
     {
         $request->validate([
-            // Validasi: pastikan nisn diinput, bertipe string, dan panjangnya maksimal sesuai format NISN
+            // Validasi: pastikan nisn dan NIK diinput
             'nisn_tambahan' => 'required|string|max:20',
+            'nik_anak' => 'required|string|size:16', // NIK Indonesia selalu 16 digit
         ], [
             'nisn_tambahan.required' => 'NISN Anak wajib diisi.',
+            'nik_anak.required' => 'NIK Anak wajib diisi untuk verifikasi keamanan.',
+            'nik_anak.size' => 'NIK Anak harus berjumlah 16 angka sesuai yang tertera di Kartu Keluarga (KK).',
         ]);
 
-        // Cari siswa berdasarkan NISN yang diinputkan
+        // 1. Cari siswa berdasarkan NISN yang diinputkan
         $siswaBaru = Siswa::where('nisn', $request->nisn_tambahan)->first();
 
-        // 1. Cek apakah NISN terdaftar di database sekolah
+        // Cek apakah NISN terdaftar di database sekolah
         if (!$siswaBaru) {
             return back()->with('error', 'Gagal: NISN tidak ditemukan di sistem madrasah. Silakan periksa kembali angka yang Anda masukkan.');
         }
 
-        // 2. Cek apakah siswa ini sudah dikaitkan ke orang tua lain
+        // 2. VERIFIKASI KEAMANAN: Cocokkan NIK Anak
+        // Menggunakan tipe (string) agar pencocokan angka 16 digit tidak meleset
+        if ((string)$siswaBaru->nik !== (string)$request->nik_anak) {
+            return back()->with('error', 'Verifikasi Gagal: NIK yang Anda masukkan tidak cocok dengan data NISN tersebut. Mohon periksa kembali Kartu Keluarga (KK) Anda.');
+        }
+
+        // 3. Cek apakah siswa ini sudah dikaitkan ke orang tua lain
         if ($siswaBaru->ortu_id !== null) {
             // Jika ortu_id sama dengan ID user yang sedang login
             if ($siswaBaru->ortu_id === Auth::id()) {
-                return back()->with('success', 'Siswa ini memang sudah terhubung dengan akun Anda.');
+                return back()->with('success', 'Profil ananda memang sudah terhubung dengan akun Anda.');
             }
             // Jika ortu_id sudah terisi orang lain
-            return back()->with('error', 'Gagal: Siswa ini sudah dikaitkan dengan akun Wali Murid lain. Hubungi Admin jika ini adalah kesalahan.');
+            return back()->with('error', 'Gagal: Profil siswa ini sudah dikaitkan dengan akun Wali Murid lain. Hubungi Tata Usaha jika terdapat kesalahan data.');
         }
 
-        // 3. Jika aman, hubungkan siswa ini ke akun orang tua yang sedang login
+        // 4. Jika semua verifikasi lolos, hubungkan siswa ini ke akun orang tua
         $siswaBaru->ortu_id = Auth::id();
         $siswaBaru->save();
 
-        return back()->with('success', 'Berhasil! Profil ananda ' . $siswaBaru->nama . ' telah ditambahkan ke akun Anda.');
+        return back()->with('success', 'Verifikasi NIK Berhasil! Profil ananda ' . $siswaBaru->nama . ' telah ditambahkan ke akun Anda.');
     }
 
     /**

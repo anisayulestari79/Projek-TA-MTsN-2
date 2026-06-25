@@ -15,6 +15,7 @@ class Siswa extends Model
     // Kolom-kolom yang dapat diisi secara massal (mass assignment)
     protected $fillable = [
         'nisn',
+        'nik',
         'nama',
         'jk',
         'kelas',

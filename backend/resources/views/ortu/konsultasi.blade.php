@@ -200,93 +200,111 @@
                         Kirim Pesan Baru
                     </h3>
 
-                    <form action="{{ route('ortu.konsultasi.kirim') }}" method="POST"
-                        class="space-y-4 md:space-y-5">
-                        @csrf
-                        <div>
-                            <label
-                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Tahun
-                                Ajaran</label>
-                            <div class="relative">
-                                <i
-                                    class="fas fa-calendar-alt absolute left-4 top-3 md:top-3.5 text-gray-400 text-xs"></i>
-                                <select name="academic_period" required
-                                    class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer">
-                                    @php $currentYear = \Carbon\Carbon::now()->year; @endphp
-                                    <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Genap">
-                                        {{ $currentYear }}/{{ $currentYear + 1 }} Genap</option>
-                                    <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Ganjil">
-                                        {{ $currentYear }}/{{ $currentYear + 1 }} Ganjil</option>
-                                    <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Genap">
-                                        {{ $currentYear - 1 }}/{{ $currentYear }} Genap</option>
-                                    <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Ganjil">
-                                        {{ $currentYear - 1 }}/{{ $currentYear }} Ganjil</option>
-                                </select>
-                                <i
-                                    class="fas fa-chevron-down absolute right-4 top-3.5 md:top-4 text-gray-400 text-xs pointer-events-none"></i>
+                    @if (isset($anakAktif) && count($anakAktif) > 0)
+                        <form action="{{ route('ortu.konsultasi.kirim') }}" method="POST"
+                            class="space-y-4 md:space-y-5">
+                            @csrf
+                            <div>
+                                <label
+                                    class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Tahun
+                                    Ajaran</label>
+                                <div class="relative">
+                                    <i
+                                        class="fas fa-calendar-alt absolute left-4 top-3 md:top-3.5 text-gray-400 text-xs"></i>
+                                    <select name="academic_period" required
+                                        class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer">
+                                        @php $currentYear = \Carbon\Carbon::now()->year; @endphp
+                                        <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Genap">
+                                            {{ $currentYear }}/{{ $currentYear + 1 }} Genap</option>
+                                        <option value="{{ $currentYear }}/{{ $currentYear + 1 }} Ganjil">
+                                            {{ $currentYear }}/{{ $currentYear + 1 }} Ganjil</option>
+                                        <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Genap">
+                                            {{ $currentYear - 1 }}/{{ $currentYear }} Genap</option>
+                                        <option value="{{ $currentYear - 1 }}/{{ $currentYear }} Ganjil">
+                                            {{ $currentYear - 1 }}/{{ $currentYear }} Ganjil</option>
+                                    </select>
+                                    <i
+                                        class="fas fa-chevron-down absolute right-4 top-3.5 md:top-4 text-gray-400 text-xs pointer-events-none"></i>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label
-                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Pilih
-                                Anak</label>
-                            <div class="relative">
-                                <i
-                                    class="fas fa-user-graduate absolute left-4 top-3 md:top-3.5 text-gray-400 text-xs"></i>
-                                <select name="siswa_id" id="pilihSiswa" onchange="updateGuruBK()" required
-                                    class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer capitalize">
-                                    @foreach ($daftarAnak ?? [] as $anak)
-                                        <option value="{{ $anak->id }}"
-                                            data-bk-id="{{ $anak->guru_bk_id ?? '' }}"
-                                            data-bk-nama="{{ $anak->guru_bk_nama ?? 'Guru BK Kelas ' . ($anak->kelas ?? 'Terkait') }}">
-                                            {{ $anak->nama }} (Kelas {{ $anak->kelas }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <i
-                                    class="fas fa-chevron-down absolute right-4 top-3.5 md:top-4 text-gray-400 text-xs pointer-events-none"></i>
+                            <div>
+                                <label
+                                    class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Pilih
+                                    Anak</label>
+                                <div class="relative">
+                                    <i
+                                        class="fas fa-user-graduate absolute left-4 top-3 md:top-3.5 text-gray-400 text-xs"></i>
+                                    <select name="siswa_id" id="pilihSiswa" onchange="updateGuruBK()" required
+                                        class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none cursor-pointer capitalize">
+                                        @foreach ($anakAktif ?? [] as $anak)
+                                            <option value="{{ $anak->id }}"
+                                                data-bk-id="{{ $anak->guru_bk_id ?? '' }}"
+                                                data-bk-nama="{{ $anak->guru_bk_nama ?? 'Guru BK Kelas ' . ($anak->kelas ?? 'Terkait') }}">
+                                                {{ $anak->nama }} (Kelas {{ $anak->kelas }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <i
+                                        class="fas fa-chevron-down absolute right-4 top-3.5 md:top-4 text-gray-400 text-xs pointer-events-none"></i>
+                                </div>
                             </div>
-                        </div>
 
-                        <div>
-                            <label
-                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Ditujukan
-                                Ke (Guru BK)</label>
-                            <div class="relative">
-                                <i
-                                    class="fas fa-chalkboard-teacher absolute left-4 top-3 md:top-3.5 text-[#10b981] text-sm"></i>
-                                <input type="text" id="namaGuruBK" readonly placeholder="Otomatis terisi..."
-                                    class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-green-50 border border-green-100 rounded-xl text-xs md:text-sm font-bold text-green-700 outline-none cursor-not-allowed capitalize">
+                            <div>
+                                <label
+                                    class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Ditujukan
+                                    Ke (Guru BK)</label>
+                                <div class="relative">
+                                    <i
+                                        class="fas fa-chalkboard-teacher absolute left-4 top-3 md:top-3.5 text-[#10b981] text-sm"></i>
+                                    <input type="text" id="namaGuruBK" readonly placeholder="Otomatis terisi..."
+                                        class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-green-50 border border-green-100 rounded-xl text-xs md:text-sm font-bold text-green-700 outline-none cursor-not-allowed capitalize">
+                                </div>
+                                <input type="hidden" name="bk_id" id="hiddenBkId">
+                                <p class="text-[8px] md:text-[9px] text-gray-400 mt-1 italic">*Guru BK menyesuaikan
+                                    kelas
+                                    anak otomatis.</p>
                             </div>
-                            <input type="hidden" name="bk_id" id="hiddenBkId">
-                            <p class="text-[8px] md:text-[9px] text-gray-400 mt-1 italic">*Guru BK menyesuaikan kelas
-                                anak otomatis.</p>
-                        </div>
 
-                        <div>
-                            <label
-                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Topik
-                                / Subjek</label>
-                            <input type="text" name="topik" required
-                                placeholder="Contoh: Klarifikasi Poin Pelanggaran"
-                                class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-medium outline-none focus:ring-2 focus:ring-green-100 transition">
-                        </div>
+                            <div>
+                                <label
+                                    class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Topik
+                                    / Subjek</label>
+                                <input type="text" name="topik" required
+                                    placeholder="Contoh: Klarifikasi Poin Pelanggaran"
+                                    class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-medium outline-none focus:ring-2 focus:ring-green-100 transition">
+                            </div>
 
-                        <div>
-                            <label
-                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Isi
-                                Pesan</label>
-                            <textarea name="pesan" rows="4" required
-                                placeholder="Tuliskan pertanyaan atau keluhan Anda di sini secara detail..."
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-medium outline-none focus:ring-2 focus:ring-green-100 transition resize-none"></textarea>
-                        </div>
+                            <div>
+                                <label
+                                    class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Isi
+                                    Pesan</label>
+                                <textarea name="pesan" rows="4" required
+                                    placeholder="Tuliskan pertanyaan atau keluhan Anda di sini secara detail..."
+                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-medium outline-none focus:ring-2 focus:ring-green-100 transition resize-none"></textarea>
+                            </div>
 
-                        <button type="submit"
-                            class="w-full bg-[#10b981] text-white px-6 py-3 md:py-4 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:bg-green-600 hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
-                            Kirim Sekarang <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
+                            <button type="submit"
+                                class="w-full bg-[#10b981] text-white px-6 py-3 md:py-4 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:bg-green-600 hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
+                                Kirim Sekarang <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    @else
+                        <div
+                            class="text-center py-10 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-200 mt-4">
+                            <div
+                                class="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner border border-gray-200">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <h4 class="font-black text-gray-700 text-sm mb-2">Layanan Ditutup</h4>
+                            <p class="text-[10px] text-gray-500 font-medium leading-relaxed px-4">
+                                Form konsultasi ditutup karena Ananda telah berstatus <span
+                                    class="font-bold text-red-500">Lulus</span> atau <span
+                                    class="font-bold text-red-500">Dikeluarkan</span>. Riwayat pesan lama tetap dapat
+                                Anda baca.
+                            </p>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- TABEL RIWAYAT KONSULTASI -->

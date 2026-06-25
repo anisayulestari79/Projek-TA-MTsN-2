@@ -71,7 +71,7 @@
                     Siswa
                 </h1>
             </div>
-            <p class="text-[10px] opacity-80 font-bold tracking-widest uppercase ml-1">MTsN 2 Kota Banjarmasin</p>
+            <p class="text-[9px] opacity-80 font-bold tracking-widest uppercase ml-1">MTsN 2 Kota Banjarmasin</p>
         </div>
 
         <nav class="mt-2 flex-grow pl-6 overflow-y-auto pr-2 space-y-1 pb-10">
@@ -135,9 +135,8 @@
                 <div class="text-right hidden sm:block">
                     <p class="text-xs font-black text-[#10b981] uppercase leading-none">{{ $user['name'] ?? 'Admin' }}
                     </p>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Status: Administrator</p>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase mt-1">Status: Administrator</p>
                 </div>
-                <!-- PERBAIKAN GAMBAR PROFIL -->
                 @php
                     $avatarUrl =
                         'https://ui-avatars.com/api/?name=' .
@@ -159,10 +158,11 @@
                 <div id="profileDropdownMenu"
                     class="absolute right-0 top-full mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95">
                     <div class="py-2">
-                        <a href="{{ route('profile.index') }}"
-                            class="block w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
+                        <button type="button"
+                            onclick="showView('profile'); document.getElementById('profileDropdownMenu').classList.add('hidden');"
+                            class="w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-[#10b981] transition flex items-center gap-3">
                             <i class="fas fa-user-edit"></i> Edit Profil
-                        </a>
+                        </button>
                         <div class="border-t border-gray-100 my-1"></div>
                         <form action="{{ route('logout') }}" method="POST" class="w-full">
                             @csrf
@@ -200,8 +200,10 @@
         <!-- VIEW: DATA SISWA -->
         <!-- ============================================== -->
         <div id="view-data-siswa" class="view-section active">
+            <!-- MAIN CARD CONTENT -->
             <div class="bg-white p-6 md:p-8 rounded-[30px] shadow-sm border border-gray-50">
 
+                <!-- TOOLBAR (Title & Buttons) -->
                 <div
                     class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-8 border-b border-gray-100 pb-6">
                     <div class="w-full xl:w-auto">
@@ -226,6 +228,7 @@
                     </div>
                 </div>
 
+                <!-- LOGIKA EKSTRAKSI DAN GROUPING KELAS -->
                 @php
                     $tingkatMaster = [];
                     $suffixMaster = [];
@@ -246,6 +249,8 @@
 
                     $groupedSiswa = collect([]);
                     if (isset($dataSiswa)) {
+                        // PERBAIKAN: Menggunakan collect($dataSiswa->items()) agar tidak membaca paginator sebagai data.
+                        // Mengurutkan data (SortBy) sebelum dikelompokkan (GroupBy) untuk mencegah tipe data berubah menjadi integer
                         $groupedSiswa = collect($dataSiswa->items())
                             ->sortBy(function ($siswa) {
                                 $parts = explode(' ', str_replace('-', ' ', $siswa->kelas));
@@ -261,6 +266,7 @@
                     }
                 @endphp
 
+                <!-- TAB STATUS SISWA -->
                 <div class="flex gap-6 border-b border-gray-100 mb-6 overflow-x-auto whitespace-nowrap">
                     <a href="{{ route('admin.siswa.index', array_merge(request()->query(), ['status' => 'Aktif'])) }}"
                         class="pb-3 px-2 text-[11px] uppercase tracking-wider font-black transition-all {{ request('status', 'Aktif') == 'Aktif' ? 'text-[#10b981] border-b-2 border-[#10b981]' : 'text-gray-400 hover:text-gray-600' }}">
@@ -280,6 +286,7 @@
                     </a>
                 </div>
 
+                <!-- FILTERS PENCARIAN -->
                 <div class="flex flex-col lg:flex-row gap-3 mb-6 items-end">
                     <div class="flex-1 w-full relative">
                         <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Cari
@@ -326,6 +333,7 @@
                         </select>
                     </div>
 
+                    <!-- TAMBAHAN: Filter Tahun Masuk -->
                     <div class="w-full lg:w-40">
                         <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Tahun Masuk</label>
                         <select id="filter-tahun"
@@ -348,11 +356,12 @@
                     </button>
                 </div>
 
+                <!-- TABEL DATA SISWA GROUP BY KELAS -->
                 <div class="overflow-x-auto border border-gray-50 rounded-2xl">
                     <table class="w-full text-left border-collapse min-w-[1000px]">
                         <thead class="bg-[#005c4b] text-white text-[10px] font-black uppercase tracking-widest">
                             <tr>
-                                <th class="p-4 rounded-tl-2xl w-32">NISN</th>
+                                <th class="p-4 rounded-tl-2xl w-36">NISN / NIK</th>
                                 <th class="p-4">NAMA SISWA</th>
                                 <th class="p-4 text-center w-24">KELAS</th>
                                 <th class="p-4 text-center">KONTAK ORTU</th>
@@ -364,6 +373,7 @@
                         <tbody class="divide-y divide-gray-100 text-xs md:text-sm bg-white">
 
                             @forelse($groupedSiswa as $namaKelas => $siswas)
+                                <!-- SUB-HEADER KELAS -->
                                 <tr class="kelas-group-header bg-green-50/50 border-y border-green-100"
                                     data-group-kelas="{{ $namaKelas }}">
                                     <td colspan="7"
@@ -376,6 +386,7 @@
                                     </td>
                                 </tr>
 
+                                <!-- BARIS DATA SISWA -->
                                 @foreach ($siswas as $siswa)
                                     @php
                                         $parts = explode(' ', str_replace('-', ' ', $siswa->kelas));
@@ -388,7 +399,11 @@
                                         data-status="{{ strtolower($status) }}" data-group="{{ $namaKelas }}"
                                         data-tahun="{{ $siswa->tahun_masuk_id ?? '' }}">
 
-                                        <td class="p-4 text-gray-500 font-medium nisn-col">{{ $siswa->nisn }}</td>
+                                        <td class="p-4 nisn-col">
+                                            <span class="block font-bold text-gray-600">{{ $siswa->nisn }}</span>
+                                            <span
+                                                class="block text-[10px] text-gray-400 mt-1 font-medium">{{ $siswa->nik ?? 'NIK Kosong' }}</span>
+                                        </td>
 
                                         <td class="p-4 font-bold text-gray-800 flex items-center gap-3">
                                             <div
@@ -407,6 +422,7 @@
                                         <td class="p-4 text-center text-gray-500">{{ $siswa->kontak_ortu ?? '-' }}
                                         </td>
 
+                                        <!-- Logika Warna Poin -->
                                         <td class="p-4 text-center font-black">
                                             @if (($siswa->poin ?? 0) >= 100)
                                                 <span class="text-red-600">{{ $siswa->poin ?? 0 }}</span>
@@ -415,8 +431,7 @@
                                             @else
                                                 <span class="text-green-600">{{ $siswa->poin ?? 0 }}</span>
                                             @endif
-                                        </td>
-
+                                            <!-- Label Status & Tahun Masuk -->
                                         <td class="p-4 text-center">
                                             @if (strtolower($status) == 'aktif')
                                                 <span
@@ -435,8 +450,9 @@
 
                                         <td class="p-4 text-center whitespace-nowrap">
                                             <button onclick="openDetailSiswaModal(this)"
-                                                data-nisn="{{ $siswa->nisn }}" data-nama="{{ $siswa->nama }}"
-                                                data-kelas="{{ $siswa->kelas }}" data-jk="{{ $siswa->jk }}"
+                                                data-nisn="{{ $siswa->nisn }}" data-nik="{{ $siswa->nik }}"
+                                                data-nama="{{ $siswa->nama }}" data-kelas="{{ $siswa->kelas }}"
+                                                data-jk="{{ $siswa->jk }}"
                                                 data-kontak="{{ $siswa->kontak_ortu }}"
                                                 data-alamat="{{ $siswa->alamat }}" data-ortu="{{ $siswa->ortu_id }}"
                                                 data-ortu-nama="{{ $siswa->ortu->name ?? 'Belum Ditautkan' }}"
@@ -449,8 +465,9 @@
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                             <button onclick="openEditSiswaModal(this)"
-                                                data-nisn="{{ $siswa->nisn }}" data-nama="{{ $siswa->nama }}"
-                                                data-jk="{{ $siswa->jk }}" data-kelas="{{ $siswa->kelas }}"
+                                                data-nisn="{{ $siswa->nisn }}" data-nik="{{ $siswa->nik }}"
+                                                data-nama="{{ $siswa->nama }}" data-jk="{{ $siswa->jk }}"
+                                                data-kelas="{{ $siswa->kelas }}"
                                                 data-kontak="{{ $siswa->kontak_ortu }}"
                                                 data-alamat="{{ $siswa->alamat }}" data-ortu="{{ $siswa->ortu_id }}"
                                                 data-status="{{ $status }}"
@@ -482,8 +499,121 @@
                 </div>
 
                 <div class="mt-6">
+                    <!-- Paginasi Laravel -->
                     {{ $dataSiswa->links() ?? '' }}
                 </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- VIEW: PROFILE -->
+        <!-- ============================================== -->
+        <div id="view-profile" class="view-section">
+            <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50 max-w-2xl mx-auto">
+                <!-- Profile Display -->
+                <div id="profileView" class="flex flex-col items-center">
+                    <div
+                        class="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-green-50 shadow-sm relative group">
+                        <img src="{{ $user['photo'] ?? 'https://ui-avatars.com/api/?name=' . urlencode($user['name'] ?? 'Admin') . '&background=10b981&color=fff' }}"
+                            class="w-full h-full object-cover" id="mainProfilePic" alt="Profile Picture">
+                    </div>
+                    <h3 class="text-2xl font-black text-gray-800 uppercase">{{ $user['name'] ?? 'Nama Pengguna' }}
+                    </h3>
+                    <p class="text-xs font-bold text-[#10b981] uppercase tracking-widest mb-8">
+                        {{ ucfirst($user['role'] ?? 'Administrator') }}</p>
+
+                    <div class="w-full space-y-4">
+                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-envelope text-[#10b981] w-10 text-center text-xl"></i>
+                            <div class="ml-4">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                    {{ ($user['role'] ?? '') === 'admin' ? 'Username' : 'NIP' }}</p>
+                                <p class="text-sm font-black text-gray-700">
+                                    {{ $user['username'] ?? ($user['nip'] ?? '-') }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-venus-mars text-[#10b981] w-10 text-center text-xl"></i>
+                            <div class="ml-4">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gender</p>
+                                <p class="text-sm font-black text-gray-700">{{ $user['gender'] ?? '-' }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-phone-alt text-[#10b981] w-10 text-center text-xl"></i>
+                            <div class="ml-4">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No. Telepon
+                                </p>
+                                <p class="text-sm font-black text-gray-700">{{ $user['phone'] ?? '-' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="toggleEditProfile(true)"
+                        class="mt-8 bg-[#10b981] text-white px-8 py-4 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition w-full">
+                        <i class="fas fa-user-edit mr-2"></i> Edit Profil
+                    </button>
+                </div>
+
+                <form id="profileForm" class="hidden flex flex-col" action="{{ route('profile.update') }}"
+                    method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+                        <h3 class="text-lg font-black text-gray-700 uppercase tracking-widest">Edit Profil</h3>
+                        <button type="button" onclick="toggleEditProfile(false)"
+                            class="text-gray-400 hover:text-red-500 transition"><i
+                                class="fas fa-times text-xl"></i></button>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Unggah
+                                Foto Profil Baru</label>
+                            <input type="file" name="photo" accept="image/*"
+                                class="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50 cursor-pointer">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Nama
+                                Lengkap</label>
+                            <input type="text" name="name" value="{{ $user['name'] ?? '' }}" required
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">{{ ($user['role'] ?? '') === 'admin' ? 'Username' : 'NIP' }}</label>
+                            <input type="text" value="{{ $user['username'] ?? ($user['nip'] ?? '') }}" disabled
+                                class="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-400 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Gender</label>
+                            <select name="gender"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition appearance-none">
+                                <option value="">Pilih Gender</option>
+                                <option value="Laki-laki"
+                                    {{ ($user['gender'] ?? '') === 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+                                <option value="Perempuan"
+                                    {{ ($user['gender'] ?? '') === 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">No.
+                                Telepon</label>
+                            <input type="tel" name="phone" value="{{ $user['phone'] ?? '' }}"
+                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 mt-8">
+                        <button type="submit"
+                            class="flex-1 bg-[#10b981] text-white px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:bg-green-600 transition">Simpan
+                            Perubahan</button>
+                        <button type="button" onclick="toggleEditProfile(false)"
+                            class="flex-1 bg-gray-100 text-gray-600 px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition">Batal</button>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -513,6 +643,8 @@
                     class="text-sm md:text-base font-black text-gray-800 uppercase text-center leading-tight">-</h4>
                 <div class="flex items-center justify-center flex-wrap gap-2 mt-1 md:mt-2">
                     <span id="detailProfileNisn"
+                        class="text-[9px] md:text-[10px] font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">-</span>
+                    <span id="detailProfileNik"
                         class="text-[9px] md:text-[10px] font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">-</span>
                     <span id="detailProfileStatus"
                         class="text-[9px] md:text-[10px] font-bold text-green-700 bg-green-100 px-3 py-1 rounded-full uppercase">-</span>
@@ -591,6 +723,13 @@
                             placeholder="Angka NISN">
                     </div>
                     <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">NIK (16 Digit) <span
+                                class="text-red-500">*</span></label>
+                        <input type="text" name="nik" required maxlength="16" minlength="16"
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981]"
+                            placeholder="NIK dari Kartu Keluarga">
+                    </div>
+                    <div class="md:col-span-2">
                         <label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap <span
                                 class="text-red-500">*</span></label>
                         <input type="text" name="nama" required
@@ -633,7 +772,7 @@
                         <label class="block text-xs font-bold text-gray-600 mb-1">Akun Orang Tua Terhubung</label>
                         <select name="ortu_id"
                             class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] appearance-none bg-white">
-                            <option value=""> Belum ada / Pilih Ortu </option>
+                            <option value="">-- Belum ada / Pilih Ortu --</option>
                             @foreach ($daftarOrtu ?? [] as $ortu)
                                 <option value="{{ $ortu->id }}">{{ $ortu->name }} ({{ $ortu->email }})
                                 </option>
@@ -695,6 +834,12 @@
                             class="w-full border bg-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none text-gray-500 cursor-not-allowed">
                     </div>
                     <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">NIK (16 Digit) <span
+                                class="text-red-500">*</span></label>
+                        <input type="text" name="nik" id="edit_nik" required maxlength="16" minlength="16"
+                            class="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
                         <label class="block text-xs font-bold text-gray-600 mb-1">Nama Lengkap <span
                                 class="text-red-500">*</span></label>
                         <input type="text" name="nama" id="edit_nama" required
@@ -834,6 +979,8 @@
                 <ol class="list-decimal pl-4 space-y-0.5 font-medium relative z-10">
                     <li><span class="font-bold text-gray-800">NISN</span> <span class="text-gray-400">(Wajib)</span>
                     </li>
+                    <li><span class="font-bold text-gray-800">NIK</span> <span class="text-gray-400">(Wajib, 16
+                            Angka)</span></li>
                     <li><span class="font-bold text-gray-800">Nama</span> <span class="text-gray-400">(Wajib)</span>
                     </li>
                     <li><span class="font-bold text-gray-800">Jenis Kelamin</span> <span
@@ -981,6 +1128,7 @@
         // ==========================================
         function openDetailSiswaModal(btn) {
             let nisn = btn.getAttribute('data-nisn');
+            let nik = btn.getAttribute('data-nik');
             let nama = btn.getAttribute('data-nama');
             let jk = btn.getAttribute('data-jk');
             let kelas = btn.getAttribute('data-kelas');
@@ -994,7 +1142,8 @@
 
             document.getElementById('detailProfileNama').innerText = nama || '-';
             document.getElementById('detailProfileTahun').innerText = "Angkatan: " + (tahunNama || '-');
-            document.getElementById('detailProfileNisn').innerText = nisn || '-';
+            document.getElementById('detailProfileNisn').innerText = "NISN: " + (nisn || '-');
+            document.getElementById('detailProfileNik').innerText = "NIK: " + (nik || '-');
             document.getElementById('detailProfileKelas').innerText = kelas || '-';
             document.getElementById('detailProfileJk').innerText = jk || '-';
             document.getElementById('detailProfileKontak').innerText = kontak || '-';
@@ -1037,6 +1186,7 @@
         function openEditSiswaModal(btn) {
             // Ambil data dari tombol
             let nisn = btn.getAttribute('data-nisn');
+            let nik = btn.getAttribute('data-nik');
             let nama = btn.getAttribute('data-nama');
             let jk = btn.getAttribute('data-jk');
             let kelas = btn.getAttribute('data-kelas');
@@ -1051,6 +1201,7 @@
 
             // Set value input
             document.getElementById('edit_nisn').value = nisn || '';
+            document.getElementById('edit_nik').value = nik || '';
             document.getElementById('edit_nama').value = nama || '';
             document.getElementById('edit_jk').value = jk || '';
             document.getElementById('edit_kelas').value = kelas || '';
@@ -1141,6 +1292,23 @@
                 if (titleEl) titleEl.innerText = "Data Master Siswa";
                 if (breadcrumbEl) breadcrumbEl.innerText = "Data Siswa";
                 document.getElementById('nav-data-siswa')?.classList.add('active');
+            } else if (viewId === 'profile') {
+                if (titleEl) titleEl.innerText = "Profil Pengguna";
+                if (breadcrumbEl) breadcrumbEl.innerText = "Home / Profil";
+                toggleEditProfile(false);
+            }
+        }
+
+        function toggleEditProfile(showForm) {
+            const view = document.getElementById('profileView');
+            const form = document.getElementById('profileForm');
+
+            if (showForm) {
+                view.classList.add('hidden');
+                form.classList.remove('hidden');
+            } else {
+                view.classList.remove('hidden');
+                form.classList.add('hidden');
             }
         }
 
@@ -1232,6 +1400,43 @@
                         setTimeout(() => {
                             profileMenu.classList.add('hidden');
                         }, 200);
+                    }
+                });
+            }
+
+            const profileForm = document.getElementById('profileForm');
+            if (profileForm) {
+                profileForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerText;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Menyimpan...';
+                    submitBtn.disabled = true;
+
+                    try {
+                        const formData = new FormData(this);
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            alert(result.message || 'Profil berhasil diperbarui!');
+                            window.location.reload();
+                        } else {
+                            alert(result.message || 'Terjadi kesalahan saat menyimpan profil.');
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Gagal terhubung ke server.');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
                     }
                 });
             }

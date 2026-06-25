@@ -929,6 +929,13 @@
                 circle.style.strokeDashoffset = "{{ $dashoffset ?? 477 }}";
             }, 100);
 
+            // BACA PERINTAH DARI URL (Agar bisa langsung buka Profil Anak dari halaman Konsultasi)
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetView = urlParams.get('view');
+            if (targetView) {
+                showView(targetView);
+            }
+
             const profileBtn = document.getElementById('profileDropdownBtn');
             const profileMenu = document.getElementById('profileDropdownMenu');
             if (profileBtn && profileMenu) {

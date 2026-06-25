@@ -110,6 +110,7 @@ class SiswaController extends Controller
         // DITAMBAHKAN: Validasi alamat, ortu_id, dan file foto
         $validator = Validator::make($request->all(), [
             'nisn' => 'required|numeric|unique:siswa,nisn', // <-- PERBAIKAN: Hapus batas 10 digit (digits:10)
+            'nik'  => 'required|string|size:16', // <-- DITAMBAHKAN: Validasi NIK wajib 16 digit
             'nama' => 'required|string',
             'jk' => 'nullable|in:Laki-laki,Perempuan',
             'kelas' => 'required|string',
@@ -143,6 +144,7 @@ class SiswaController extends Controller
 
         $siswa = Siswa::create([
             'nisn' => $request->nisn,
+            'nik'  => $request->nik, // <-- DITAMBAHKAN
             'nama' => $request->nama,
             'jk' => $request->jk,
             'kelas' => $request->kelas,
@@ -180,6 +182,7 @@ class SiswaController extends Controller
 
         // DITAMBAHKAN: Validasi alamat, ortu_id, dan file foto
         $validator = Validator::make($request->all(), [
+            'nik'  => 'required|string|size:16', // <-- DITAMBAHKAN: Validasi NIK wajib 16 digit
             'nama' => 'required|string',
             'jk' => 'nullable|in:Laki-laki,Perempuan',
             'kelas' => 'required|string',
@@ -202,6 +205,7 @@ class SiswaController extends Controller
 
         // Menyiapkan data update utama
         $updateData = [
+            'nik'  => $request->nik, // <-- DITAMBAHKAN
             'nama' => $request->nama,
             'jk' => $request->jk ?? $siswa->jk,
             'kelas' => $request->kelas,
@@ -295,14 +299,15 @@ class SiswaController extends Controller
             // 4. Looping setiap baris di Excel
             foreach ($rows as $row) {
                 // Mapping index kolom Excel berdasarkan format:
-                // 0:NISN | 1:Nama | 2:JK | 3:Kelas | 4:Kontak | 5:Alamat | 6:Tahun Masuk
+                // 0:NISN | 1:NIK | 2:Nama | 3:JK | 4:Kelas | 5:Kontak | 6:Alamat | 7:Tahun Masuk
                 $nisn   = isset($row[0]) ? trim($row[0]) : null;
-                $nama   = isset($row[1]) ? trim($row[1]) : null;
-                $jk     = isset($row[2]) ? trim($row[2]) : null;
-                $kelas  = isset($row[3]) ? trim($row[3]) : null;
-                $kontak = isset($row[4]) ? trim($row[4]) : null;
-                $alamat = isset($row[5]) ? trim($row[5]) : null;
-                $thn_excel = isset($row[6]) ? trim($row[6]) : null;
+                $nik    = isset($row[1]) ? trim($row[1]) : null; // <-- DITAMBAHKAN (Kolom B di Excel)
+                $nama   = isset($row[2]) ? trim($row[2]) : null;
+                $jk     = isset($row[3]) ? trim($row[3]) : null;
+                $kelas  = isset($row[4]) ? trim($row[4]) : null;
+                $kontak = isset($row[5]) ? trim($row[5]) : null;
+                $alamat = isset($row[6]) ? trim($row[6]) : null;
+                $thn_excel = isset($row[7]) ? trim($row[7]) : null;
 
                 // Wajib ada NISN dan Nama, jika kosong lewati baris ini
                 if (empty($nisn) || empty($nama)) {
@@ -332,6 +337,7 @@ class SiswaController extends Controller
                 \App\Models\Siswa::updateOrCreate(
                     ['nisn' => $nisn],
                     [
+                        'nik'            => $nik, // <-- DITAMBAHKAN
                         'nama'           => $nama,
                         'jk'             => $jk,
                         'kelas'          => $kelas,
