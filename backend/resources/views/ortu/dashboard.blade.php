@@ -174,8 +174,7 @@
         </header>
 
         <!-- Custom Alert Container (Pengganti window.alert) -->
-        <div id="customAlertBox"
-            class="hidden fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-sm">
+        <div id="customAlertBox" class="hidden fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-sm">
             <div id="customAlertContent"
                 class="bg-white rounded-2xl shadow-2xl border-l-4 p-4 flex items-start gap-3 transition-all duration-300 translate-y-[-20px] opacity-0">
                 <div id="customAlertIcon" class="mt-0.5 text-lg"></div>
@@ -233,8 +232,7 @@
         <div id="view-dashboard" class="view-section active">
             @if (isset($daftarAnak) && count($daftarAnak) > 1)
                 <div class="mb-6 md:mb-8">
-                    <h3 class="font-black text-gray-400 text-[10px] uppercase tracking-widest mb-3">Pilih Anak Anda
-                    </h3>
+                    <h3 class="font-black text-gray-400 text-[10px] uppercase tracking-widest mb-3">Pilih Anak Anda</h3>
                     <div class="flex gap-3 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
                         @foreach ($daftarAnak as $anak)
                             <a href="?siswa_id={{ $anak->id }}"
@@ -300,8 +298,7 @@
                             </h3>
                             <p
                                 class="text-gray-500 text-xs md:text-sm font-medium leading-relaxed mb-6 max-w-lg mx-auto md:mx-0">
-                                Saat ini memiliki <strong class="text-{{ $statusWarna }}-600">{{ $poinAktif }}
-                                    Poin
+                                Saat ini memiliki <strong class="text-{{ $statusWarna }}-600">{{ $poinAktif }} Poin
                                     Pelanggaran</strong>.
                                 <br><br>
                                 @if ($poinAktif >= 100)
@@ -752,12 +749,12 @@
                     <i class="fas fa-link"></i>
                 </div>
                 <h3 class="font-black text-gray-800 text-lg md:text-xl">Kaitkan Anak Lain</h3>
-                <p class="text-[10px] md:text-xs text-gray-500 mt-2 px-2 md:px-4">Masukkan NISN anak Anda yang lain
-                    agar profilnya terhubung dengan akun ini.</p>
+                <p class="text-[10px] md:text-xs text-gray-500 mt-2 px-2 md:px-4">Masukkan NISN dan NIK anak Anda yang
+                    lain sebagai verifikasi keamanan untuk menghubungkan profil.</p>
             </div>
             <form action="{{ route('ortu.tambah-anak') }}" method="POST">
                 @csrf
-                <div class="mb-6">
+                <div class="mb-4">
                     <label
                         class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">NISN
                         Anak (10 Angka)</label>
@@ -765,6 +762,17 @@
                         <i class="fas fa-id-card absolute left-4 top-[14px] text-gray-400 text-xs md:text-sm"></i>
                         <input type="text" name="nisn_tambahan" required maxlength="10"
                             placeholder="Masukkan NISN Anak"
+                            class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label
+                        class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">NIK
+                        Anak (16 Angka dari KK)</label>
+                    <div class="relative">
+                        <i class="fas fa-fingerprint absolute left-4 top-[14px] text-gray-400 text-xs md:text-sm"></i>
+                        <input type="text" name="nik_anak" required maxlength="16" minlength="16"
+                            placeholder="Masukkan 16 Digit NIK Anak"
                             class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition">
                     </div>
                 </div>
@@ -814,12 +822,10 @@
             document.getElementById('customAlertMessage').innerText = message;
 
             if (isSuccess) {
-                content.className =
-                    'bg-white rounded-2xl shadow-2xl border-l-4 border-[#10b981] p-4 flex items-start gap-3 transition-all duration-300 translate-y-[-20px] opacity-0';
+                content.className = 'bg-white rounded-2xl shadow-2xl border-l-4 border-[#10b981] p-4 flex items-start gap-3 transition-all duration-300 translate-y-[-20px] opacity-0';
                 icon.innerHTML = '<i class="fas fa-check-circle text-[#10b981]"></i>';
             } else {
-                content.className =
-                    'bg-white rounded-2xl shadow-2xl border-l-4 border-red-500 p-4 flex items-start gap-3 transition-all duration-300 translate-y-[-20px] opacity-0';
+                content.className = 'bg-white rounded-2xl shadow-2xl border-l-4 border-red-500 p-4 flex items-start gap-3 transition-all duration-300 translate-y-[-20px] opacity-0';
                 icon.innerHTML = '<i class="fas fa-exclamation-circle text-red-500"></i>';
             }
 
@@ -990,14 +996,12 @@
                         submitBtn.disabled = false;
 
                         if (response.ok && result.success) {
-                            showCustomAlert('Berhasil!', result.message ||
-                                'Profil berhasil diperbarui.', true);
+                            showCustomAlert('Berhasil!', result.message || 'Profil berhasil diperbarui.', true);
                             setTimeout(() => {
                                 window.location.reload();
                             }, 1500);
                         } else {
-                            showCustomAlert('Gagal', result.message ||
-                                'Terjadi kesalahan saat menyimpan.', false);
+                            showCustomAlert('Gagal', result.message || 'Terjadi kesalahan saat menyimpan.', false);
                         }
                     } catch (error) {
                         submitBtn.innerHTML = originalText;

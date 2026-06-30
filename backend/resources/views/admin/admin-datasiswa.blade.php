@@ -135,7 +135,7 @@
                 <div class="text-right hidden sm:block">
                     <p class="text-xs font-black text-[#10b981] uppercase leading-none">{{ $user['name'] ?? 'Admin' }}
                     </p>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase mt-1">Status: Administrator</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase mt-1">Status: Administrator</p>
                 </div>
                 @php
                     $avatarUrl =

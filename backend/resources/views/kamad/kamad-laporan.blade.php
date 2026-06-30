@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Laporan Masuk - Kepala Madrasah</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,15 +28,24 @@
     </style>
 </head>
 
-<body class="bg-[#f4f7f6] font-sans flex text-gray-800">
+<body class="bg-[#f4f7f6] font-sans flex text-gray-800 overflow-x-hidden">
+
+    <!-- OVERLAY UNTUK MOBILE SIDEBAR -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden transition-opacity" onclick="toggleSidebar()">
+    </div>
 
     <!-- SIDEBAR -->
-    <aside class="w-72 min-h-screen bg-[#10b981] text-white flex flex-col fixed shadow-xl z-50">
-        <div class="p-8">
-            <div class="flex items-center gap-3 mb-2">
+    <aside id="sidebar"
+        class="w-72 min-h-screen bg-[#10b981] text-white flex flex-col fixed shadow-xl z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+        <div class="p-6 md:p-8 relative">
+            <button onclick="toggleSidebar()" class="md:hidden absolute top-4 right-4 text-white/80 hover:text-white">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-2 mt-2 md:mt-0">
                 <img src="https://i.ibb.co.com/Psm2GxFN/5ef6453c-3a7b-47dc-a402-dacf0adb575d-removebg-preview-1.png"
                     class="w-10 drop-shadow-md" alt="Logo Kemenag">
-                <h1 class="font-bold text-2xl leading-tight tracking-tight uppercase">Panel <br> Pimpinan <br> Madrasah
+                <h1 class="font-bold text-xl md:text-2xl leading-tight tracking-tight uppercase">Panel <br> Pimpinan
+                    <br> Madrasah
                 </h1>
             </div>
             <p class="text-[10px] opacity-80 font-medium tracking-widest uppercase ml-1">MTsN 2 Kota Banjarmasin</p>
@@ -50,7 +59,8 @@
             </a>
 
             <!-- Menu Laporan Masuk Aktif di halaman ini -->
-            <a href="{{ route('kamad.kamad-laporan') }}" onclick="showView('laporan')" id="nav-laporan"
+            <a href="{{ route('kamad.kamad-laporan') }}"
+                onclick="event.preventDefault(); showView('laporan'); closeSidebarOnMobile();" id="nav-laporan"
                 class="sidebar-item active flex items-center px-6 py-4 transition">
                 <i class="fas fa-file-contract mr-4 text-sm"></i> <span>Laporan Masuk</span>
             </a>
@@ -63,23 +73,31 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 ml-72 p-10">
+    <main class="flex-1 md:ml-72 p-4 md:p-10 w-full transition-all duration-300 min-h-screen flex flex-col">
         <!-- GLOBAL HEADER -->
-        <header class="flex justify-between items-center mb-10">
-            <div>
-                <nav class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1">
-                    Home / <span id="breadcrumb-active">Laporan Masuk</span>
-                </nav>
-                <h2 id="view-title" class="text-2xl font-black text-gray-700 uppercase tracking-tighter italic">
-                    Arsip Laporan Sistem
-                </h2>
+        <header class="flex justify-between items-center mb-6 md:mb-10 mt-2 md:mt-0">
+            <div class="flex items-center gap-3 md:gap-4">
+                <button onclick="toggleSidebar()"
+                    class="md:hidden text-gray-600 hover:text-[#10b981] focus:outline-none shrink-0">
+                    <i class="fas fa-bars text-xl bg-white p-2 rounded-lg shadow-sm border border-gray-100"></i>
+                </button>
+                <div>
+                    <nav
+                        class="text-[9px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-1 hidden sm:block">
+                        Home / <span id="breadcrumb-active">Laporan Masuk</span>
+                    </nav>
+                    <h2 id="view-title"
+                        class="text-xl md:text-2xl font-black text-gray-700 uppercase tracking-tighter italic">
+                        Arsip Laporan Sistem
+                    </h2>
+                </div>
             </div>
 
             <!-- User Profile & Dropdown -->
-            <div class="relative">
+            <div class="relative shrink-0">
                 <button id="profileDropdownBtn"
-                    class="flex items-center gap-4 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition focus:outline-none">
-                    <div class="text-right">
+                    class="flex items-center gap-2 md:gap-4 bg-white p-1.5 pr-3 md:px-6 md:py-2 rounded-full shadow-sm border border-gray-100 hover:bg-gray-50 transition focus:outline-none">
+                    <div class="text-right hidden md:block">
                         <p class="text-xs font-black text-[#10b981] uppercase leading-none">
                             {{ Auth::user()->name ?? 'Kepala Madrasah' }}
                         </p>
@@ -99,14 +117,15 @@
                     @endphp
 
                     <img src="{{ $photoPath }}" onerror="this.src='{{ $avatarUrl }}'"
-                        class="w-10 h-10 rounded-full border-2 border-green-50 object-cover shadow-sm" alt="Profile">
+                        class="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-green-50 object-cover shadow-sm"
+                        alt="Profile">
 
-                    <i class="fas fa-chevron-down text-gray-400 text-xs ml-1"></i>
+                    <i class="fas fa-chevron-down text-gray-400 text-xs ml-1 md:ml-0"></i>
                 </button>
 
                 <!-- Dropdown Menu -->
                 <div id="profileDropdownMenu"
-                    class="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95">
+                    class="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hidden z-50 transform origin-top-right transition-all duration-200 opacity-0 scale-95">
                     <div class="py-2">
                         <!-- Mengarah ke file index profil mandiri Anda -->
                         <a href="{{ route('profile.index') }}"
@@ -127,24 +146,25 @@
         </header>
 
         <!-- ============================================== -->
-        <!-- SECTION 1: KONTEN HALAMAN LAPORAN MASUK          -->
+        <!-- SECTION 1: KONTEN HALAMAN LAPORAN MASUK        -->
         <!-- ============================================== -->
         <div id="view-laporan" class="view-section active">
-            <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50 min-h-[70vh]">
+            <div class="bg-white p-6 md:p-8 rounded-[30px] shadow-sm border border-gray-50 min-h-[70vh]">
                 <div
-                    class="flex flex-col md:flex-row md:justify-between md:items-center mb-8 border-b border-gray-100 pb-6 gap-4">
+                    class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 md:mb-8 border-b border-gray-100 pb-4 md:pb-6 gap-4">
                     <div>
-                        <h3 class="font-black text-gray-700 text-lg uppercase tracking-widest">Daftar Laporan Masuk</h3>
-                        <p class="text-xs text-gray-400 mt-1 font-bold">Rekapitulasi data pelanggaran dari Admin & Guru
-                            BK</p>
+                        <h3 class="font-black text-gray-700 text-base md:text-lg uppercase tracking-widest">Daftar
+                            Laporan Masuk</h3>
+                        <p class="text-[10px] md:text-xs text-gray-400 mt-1 font-bold">Rekapitulasi data pelanggaran
+                            dari Admin & Guru BK</p>
                     </div>
 
                     <!-- Filter Laporan -->
                     <div class="flex flex-wrap gap-3">
-                        <div class="relative">
+                        <div class="relative w-full sm:w-auto">
                             <i class="fas fa-filter absolute left-4 top-3 text-gray-300 text-xs"></i>
                             <select
-                                class="pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition cursor-pointer appearance-none">
+                                class="w-full pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-100 transition cursor-pointer appearance-none">
                                 <option value="">Semua Kategori</option>
                                 <option value="bulanan">Rekap Bulanan</option>
                                 <option value="kelas">Rekap Per Kelas</option>
@@ -159,56 +179,58 @@
                 <div class="space-y-4">
                     @forelse($listLaporan ?? [] as $laporan)
                         <div
-                            class="p-6 bg-gray-50 hover:bg-white hover:shadow-md rounded-2xl flex flex-col lg:flex-row lg:justify-between lg:items-center transition duration-300 border border-gray-100 group">
-                            <div class="flex items-center gap-5 mb-4 lg:mb-0">
+                            class="p-4 md:p-6 bg-gray-50 hover:bg-white hover:shadow-md rounded-2xl flex flex-col lg:flex-row lg:justify-between lg:items-center transition duration-300 border border-gray-100 group gap-4">
+                            <div class="flex items-start sm:items-center gap-4 md:gap-5">
                                 <!-- Icon berubah warna saat di hover -->
                                 <div
-                                    class="w-14 h-14 rounded-2xl bg-green-50 text-[#10b981] flex items-center justify-center text-2xl group-hover:bg-[#10b981] group-hover:text-white transition duration-300">
+                                    class="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-green-50 text-[#10b981] flex items-center justify-center text-xl md:text-2xl group-hover:bg-[#10b981] group-hover:text-white transition duration-300 shrink-0">
                                     <i class="fas fa-file-pdf"></i>
                                 </div>
                                 <div>
-                                    <div class="flex items-center gap-2 mb-1">
+                                    <div class="flex flex-wrap items-center gap-2 mb-1">
                                         <span
                                             class="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-widest">{{ $laporan->kategori ?? 'Bulanan' }}</span>
-                                        <span class="text-xs text-gray-400 font-bold"><i
+                                        <span class="text-[10px] md:text-xs text-gray-400 font-bold"><i
                                                 class="far fa-calendar-alt mr-1"></i>
                                             {{ $laporan->created_at ? $laporan->created_at->format('d M Y') : 'Tgl Laporan' }}</span>
                                     </div>
-                                    <h4 class="font-black text-gray-800 uppercase tracking-tight text-sm">
+                                    <h4 class="font-black text-gray-800 uppercase tracking-tight text-xs md:text-sm">
                                         {{ $laporan->judul ?? 'Judul Laporan' }}</h4>
-                                    <p class="text-gray-400 mt-1 font-medium text-[10px] uppercase tracking-wider"><i
-                                            class="fas fa-paper-plane mr-1"></i> Pengirim:
+                                    <p
+                                        class="text-gray-400 mt-1 font-medium text-[9px] md:text-[10px] uppercase tracking-wider">
+                                        <i class="fas fa-paper-plane mr-1"></i> Pengirim:
                                         {{ $laporan->pengirim->name ?? 'Admin Sistem' }}</p>
                                 </div>
                             </div>
-                            <div class="flex gap-3">
+                            <div class="flex flex-col sm:flex-row gap-2 md:gap-3 w-full lg:w-auto mt-2 lg:mt-0">
                                 <a href="{{ asset('storage/' . $laporan->file_path) }}" target="_blank"
-                                    class="bg-white border border-gray-200 text-gray-600 px-5 py-2.5 rounded-xl font-bold uppercase tracking-tighter text-[10px] hover:bg-gray-50 transition flex items-center">
+                                    class="w-full sm:w-auto justify-center bg-white border border-gray-200 text-gray-600 px-5 py-2.5 rounded-xl font-bold uppercase tracking-tighter text-[10px] hover:bg-gray-50 transition flex items-center">
                                     <i class="fas fa-eye mr-2"></i> Lihat
                                 </a>
                                 <a href="{{ asset('storage/' . $laporan->file_path) }}" download
-                                    class="bg-[#10b981] text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-tighter text-[10px] hover:scale-105 shadow-sm shadow-green-100 transition flex items-center">
+                                    class="w-full sm:w-auto justify-center bg-[#10b981] text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-tighter text-[10px] hover:scale-105 shadow-sm shadow-green-100 transition flex items-center">
                                     <i class="fas fa-download mr-2"></i> Unduh
                                 </a>
                             </div>
                         </div>
                     @empty
                         <!-- Tampilan jujur jika tidak ada data di database -->
-                        <div class="p-8 text-center text-gray-400 font-bold">
+                        <div class="p-6 md:p-8 text-center text-gray-400 font-bold">
                             <div
-                                class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-inbox text-3xl text-gray-300"></i>
+                                class="w-16 h-16 md:w-20 md:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-inbox text-2xl md:text-3xl text-gray-300"></i>
                             </div>
-                            <p class="text-gray-500 uppercase tracking-widest text-xs">Belum ada laporan masuk</p>
-                            <p class="font-normal mt-2 text-sm">Semua data laporan yang dikirim admin akan muncul di
-                                sini.</p>
+                            <p class="text-gray-500 uppercase tracking-widest text-[10px] md:text-xs">Belum ada laporan
+                                masuk</p>
+                            <p class="font-normal mt-2 text-xs md:text-sm">Semua data laporan yang dikirim admin akan
+                                muncul di sini.</p>
                         </div>
                     @endforelse
                 </div>
 
                 <!-- Pagination (Jika Anda menggunakan paginate di controller) -->
                 @if (isset($listLaporan) && method_exists($listLaporan, 'links'))
-                    <div class="mt-8 pt-6 border-t border-gray-100">
+                    <div class="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-100">
                         {{ $listLaporan->links() }}
                     </div>
                 @endif
@@ -220,12 +242,12 @@
         <!-- SECTION 2: PROFILE PENGGUNA (DISEMBUNYIKAN)      -->
         <!-- ============================================== -->
         <div id="view-profile" class="view-section">
-            <div class="bg-white p-8 rounded-[30px] shadow-sm border border-gray-50 max-w-2xl mx-auto">
+            <div class="bg-white p-6 md:p-8 rounded-[30px] shadow-sm border border-gray-50 max-w-2xl mx-auto w-full">
                 <!-- Profile Display -->
                 <div id="profileView" class="flex flex-col items-center transition-all duration-300">
                     <!-- Image -->
                     <div
-                        class="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-green-50 shadow-sm relative group">
+                        class="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden mb-4 border-4 border-green-50 shadow-sm relative group">
                         @if (Auth::check() && Auth::user()->photo)
                             <img src="{{ str_starts_with(Auth::user()->photo, 'http') ? Auth::user()->photo : asset('storage/' . Auth::user()->photo) }}"
                                 class="w-full h-full object-cover" id="mainProfilePic" alt="Profile Picture">
@@ -234,41 +256,46 @@
                                 class="w-full h-full object-cover" id="mainProfilePic" alt="Profile Picture">
                         @endif
                     </div>
-                    <h3 class="text-2xl font-black text-gray-800 uppercase">
+                    <h3 class="text-xl md:text-2xl font-black text-gray-800 uppercase text-center">
                         {{ Auth::user()->name ?? 'Nama Pengguna' }}</h3>
-                    <p class="text-xs font-bold text-[#10b981] uppercase tracking-widest mb-8">
+                    <p
+                        class="text-[10px] md:text-xs font-bold text-[#10b981] uppercase tracking-widest mb-6 md:mb-8 text-center">
                         {{ ucfirst(Auth::user()->role ?? 'Pimpinan') }}</p>
 
-                    <div class="w-full space-y-4">
-                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                            <i class="fas fa-id-badge text-[#10b981] w-10 text-center text-xl"></i>
-                            <div class="ml-4">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">NIP / Username
+                    <div class="w-full space-y-3 md:space-y-4">
+                        <div class="flex items-center p-4 md:p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-id-badge text-[#10b981] w-8 md:w-10 text-center text-lg md:text-xl"></i>
+                            <div class="ml-3 md:ml-4">
+                                <p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                    NIP / Username
                                 </p>
-                                <p class="text-sm font-black text-gray-700">
+                                <p class="text-xs md:text-sm font-black text-gray-700">
                                     {{ Auth::user()->nip ?? (Auth::user()->username ?? '-') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                            <i class="fas fa-venus-mars text-[#10b981] w-10 text-center text-xl"></i>
-                            <div class="ml-4">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gender</p>
-                                <p class="text-sm font-black text-gray-700">
+                        <div class="flex items-center p-4 md:p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-venus-mars text-[#10b981] w-8 md:w-10 text-center text-lg md:text-xl"></i>
+                            <div class="ml-3 md:ml-4">
+                                <p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Gender</p>
+                                <p class="text-xs md:text-sm font-black text-gray-700">
                                     {{ Auth::user()->gender ?? (Auth::user()->jk ?? '-') }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                            <i class="fas fa-phone-alt text-[#10b981] w-10 text-center text-xl"></i>
-                            <div class="ml-4">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No. Telepon
+                        <div class="flex items-center p-4 md:p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                            <i class="fas fa-phone-alt text-[#10b981] w-8 md:w-10 text-center text-lg md:text-xl"></i>
+                            <div class="ml-3 md:ml-4">
+                                <p class="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                    No. Telepon
                                 </p>
-                                <p class="text-sm font-black text-gray-700">{{ Auth::user()->phone ?? '-' }}</p>
+                                <p class="text-xs md:text-sm font-black text-gray-700">
+                                    {{ Auth::user()->phone ?? '-' }}</p>
                             </div>
                         </div>
                     </div>
 
                     <button type="button" onclick="toggleEditProfile(true)"
-                        class="mt-8 bg-[#10b981] text-white px-8 py-4 rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition w-full">
+                        class="mt-6 md:mt-8 bg-[#10b981] text-white px-8 py-3.5 md:py-4 rounded-2xl text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition w-full">
                         <i class="fas fa-user-edit mr-2"></i> Edit Profil
                     </button>
                 </div>
@@ -277,40 +304,42 @@
                 <form id="profileForm" class="hidden flex-col transition-all duration-300"
                     action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
-                    <div class="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
-                        <h3 class="text-lg font-black text-gray-700 uppercase tracking-widest">Edit Profil</h3>
+                    <div class="flex justify-between items-center mb-6 md:mb-8 border-b border-gray-100 pb-4">
+                        <h3 class="text-base md:text-lg font-black text-gray-700 uppercase tracking-widest">Edit Profil
+                        </h3>
                         <button type="button" onclick="toggleEditProfile(false)"
                             class="text-gray-400 hover:text-red-500 transition"><i
-                                class="fas fa-times text-xl"></i></button>
+                                class="fas fa-times text-lg md:text-xl"></i></button>
                     </div>
 
-                    <div class="space-y-5">
+                    <div class="space-y-4 md:space-y-5">
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Unggah
+                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Unggah
                                 Foto Profil Baru</label>
                             <input type="file" name="photo" accept="image/*"
-                                class="w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50">
+                                class="w-full text-xs md:text-sm text-gray-500 file:mr-3 md:file:mr-4 file:py-2 md:file:py-3 file:px-3 md:file:px-4 file:rounded-xl file:border-0 file:text-[10px] md:file:text-xs file:font-bold file:bg-green-50 file:text-[#10b981] hover:file:bg-green-100 transition border border-gray-100 rounded-xl bg-gray-50">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Nama
+                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Nama
                                 Lengkap</label>
                             <input type="text" name="name" value="{{ Auth::user()->name ?? '' }}" required
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">NIP
+                            <label
+                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">NIP
                                 / Username</label>
                             <input type="text" value="{{ Auth::user()->nip ?? (Auth::user()->username ?? '') }}"
                                 disabled
-                                class="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-400 cursor-not-allowed">
+                                class="w-full px-4 py-2.5 md:py-3 bg-gray-100 border border-gray-200 rounded-xl text-xs md:text-sm font-bold text-gray-400 cursor-not-allowed">
                         </div>
                         <div>
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Gender</label>
+                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Gender</label>
                             <select name="gender"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                                 <option value="">Pilih Gender</option>
                                 <option value="Laki-laki"
                                     {{ (Auth::user()->gender ?? (Auth::user()->jk ?? '')) === 'Laki-laki' ? 'selected' : '' }}>
@@ -321,26 +350,27 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">No.
+                            <label
+                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">No.
                                 Telepon</label>
                             <input type="tel" name="phone" value="{{ Auth::user()->phone ?? '' }}"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                         </div>
                         <div class="pt-4 mt-2 border-t border-gray-100">
                             <label
-                                class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Ganti
+                                class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 md:mb-2">Ganti
                                 Password (Opsional)</label>
                             <input type="password" name="password" placeholder="Kosongkan jika tidak ingin mengubah"
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
+                                class="w-full px-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-green-100 transition">
                         </div>
                     </div>
 
-                    <div class="flex gap-4 mt-8">
+                    <div class="flex flex-col sm:flex-row gap-3 md:gap-4 mt-6 md:mt-8">
                         <button type="submit"
-                            class="flex-1 bg-[#10b981] text-white px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition">Simpan
+                            class="w-full sm:flex-1 bg-[#10b981] text-white px-6 py-3.5 md:py-4 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-green-100 hover:scale-105 transition">Simpan
                             Perubahan</button>
                         <button type="button" onclick="toggleEditProfile(false)"
-                            class="flex-1 bg-gray-100 text-gray-600 px-6 py-4 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition">Batal</button>
+                            class="w-full sm:flex-1 bg-gray-100 text-gray-600 px-6 py-3.5 md:py-4 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition">Batal</button>
                     </div>
                 </form>
             </div>
@@ -350,6 +380,26 @@
 
     <!-- SCRIPT -->
     <script>
+        // Logika Toggle Sidebar Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            if (overlay.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            } else {
+                overlay.classList.remove('opacity-100');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        function closeSidebarOnMobile() {
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+
         // Logika Tab SPA (Sistem 1 File)
         function showView(viewId) {
             document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));

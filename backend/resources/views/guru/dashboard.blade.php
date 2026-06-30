@@ -91,11 +91,7 @@
                 class="sidebar-item nav-btn active flex items-center px-6 py-4 transition" data-view="dashboard">
                 <i class="fas fa-th-large mr-4 text-sm opacity-80"></i> <span>Dashboard</span>
             </a>
-            <a href="#" onclick="showView('poin')" id="nav-poin"
-                class="sidebar-item nav-btn flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl"
-                data-view="poin">
-                <i class="fas fa-edit mr-4 text-sm opacity-80"></i> <span class="font-medium">Input Poin Siswa</span>
-            </a>
+
             <a href="#" onclick="showView('data-siswa')" id="nav-data-siswa"
                 class="sidebar-item nav-btn flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl"
                 data-view="data-siswa">
@@ -109,6 +105,12 @@
                     data-view="data-kelas">
                     <i class="fas fa-chalkboard-teacher mr-4 text-sm opacity-80"></i> <span class="font-medium">Data
                         Kelas Binaan</span>
+                </a>
+                <a href="#" onclick="showView('poin')" id="nav-poin"
+                    class="sidebar-item nav-btn flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl"
+                    data-view="poin">
+                    <i class="fas fa-edit mr-4 text-sm opacity-80"></i> <span class="font-medium">Input Poin
+                        Siswa</span>
                 </a>
                 <a href="#" onclick="showView('konsultasi')" id="nav-konsultasi"
                     class="sidebar-item nav-btn flex items-center px-6 py-4 hover:bg-white/10 transition rounded-l-xl"

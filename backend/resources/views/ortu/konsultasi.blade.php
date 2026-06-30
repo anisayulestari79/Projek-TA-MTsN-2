@@ -147,6 +147,12 @@
                             </a>
                         @endif
 
+                        <button type="button"
+                            onclick="openTambahAnakModal(); document.getElementById('profileDropdownMenu').classList.add('hidden');"
+                            class="w-full text-left px-6 py-3 text-xs font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition flex items-center gap-3">
+                            <i class="fas fa-link"></i> Kaitkan Anak Lain
+                        </button>
+
                         <div class="border-t border-gray-100 my-1"></div>
                         <a href="#"
                             onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
@@ -647,6 +653,54 @@
         </div>
     </div>
 
+    <!-- MODAL TAMBAH ANAK LAIN -->
+    <div id="tambahAnakModal" class="fixed inset-0 bg-black/50 hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[30px] w-full max-w-md overflow-hidden shadow-2xl p-6 md:p-8 relative">
+            <button onclick="closeTambahAnakModal()"
+                class="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-red-500 transition"><i
+                    class="fas fa-times text-xl"></i></button>
+            <div class="text-center mb-6">
+                <div
+                    class="w-12 h-12 md:w-16 md:h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-xl md:text-2xl mx-auto mb-4">
+                    <i class="fas fa-link"></i>
+                </div>
+                <h3 class="font-black text-gray-800 text-lg md:text-xl">Kaitkan Anak Lain</h3>
+                <p class="text-[10px] md:text-xs text-gray-500 mt-2 px-2 md:px-4">Masukkan NISN dan NIK anak Anda yang
+                    lain
+                    sebagai verifikasi keamanan untuk menghubungkan profil.</p>
+            </div>
+            <form action="{{ route('ortu.tambah-anak') }}" method="POST">
+                @csrf
+                <div class="mb-4">
+                    <label
+                        class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">NISN
+                        Anak (10 Angka)</label>
+                    <div class="relative">
+                        <i class="fas fa-id-card absolute left-4 top-[14px] text-gray-400 text-xs md:text-sm"></i>
+                        <input type="text" name="nisn_tambahan" required maxlength="10"
+                            placeholder="Masukkan NISN Anak"
+                            class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label
+                        class="block text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">NIK
+                        Anak (16 Angka dari KK)</label>
+                    <div class="relative">
+                        <i class="fas fa-fingerprint absolute left-4 top-[14px] text-gray-400 text-xs md:text-sm"></i>
+                        <input type="text" name="nik_anak" required maxlength="16" minlength="16"
+                            placeholder="Masukkan 16 Digit NIK Anak"
+                            class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs md:text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 transition">
+                    </div>
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-500 text-white px-6 py-3 md:py-3.5 rounded-xl text-[10px] md:text-xs font-bold uppercase tracking-wider shadow-lg shadow-blue-100 hover:bg-blue-600 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i> Hubungkan Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- SCRIPT -->
     <script>
         // Logika Sidebar Mobile Responsif
@@ -667,6 +721,14 @@
             if (window.innerWidth < 768) {
                 toggleSidebar();
             }
+        }
+
+        function openTambahAnakModal() {
+            document.getElementById('tambahAnakModal').classList.remove('hidden');
+        }
+
+        function closeTambahAnakModal() {
+            document.getElementById('tambahAnakModal').classList.add('hidden');
         }
 
         // LOGIKA UPDATE GURU BK OTOMATIS
