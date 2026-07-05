@@ -22,11 +22,11 @@ class KamadSeeder extends Seeder
                 'name'     => 'Drs. Riduansyah, M.Pd.',
                 'email'    => 'kamad@mtsn2bjm.sch.id',
                 'username' => 'kamad_mtsn2',
-                'nip'      => '196702031994031008', // Ganti dengan NIP Kamad yang asli jika ada
-                'role'     => 'kamad',              // Wajib 'kamad' agar logika login & controller berfungsi
-                'gender'   => 'Laki-laki',          // Atau Perempuan
+                'nip'      => '196702031994031008',
+                'role'     => 'kamad',
+                'gender'   => 'Laki-laki',
                 'phone'    => '081234567890',
-                'password' => Hash::make('kamad123'), // Password default, bisa diubah nanti
+                'password' => Hash::make('kamad123'),
             ]);
 
             $this->command->info('Akun Kepala Madrasah berhasil dibuat!');
